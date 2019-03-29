@@ -2,33 +2,46 @@
 
 import json
 import tkinter as tk
-from tkinter.filedialog import askopenfilename
+from tkinter.filedialog import askopenfilename # should be replace with QGIS qt
 
 
-#file = "C:/Projects/lyrtoqml/lyrx samples/bbb.lyrx"
-#file = "C:/Projects/lyrtoqml/lyrx samples/plan2.lyrx"
-#with open(file, encoding="utf-8") as json_data:
-#    d = json.load(json_data)
+#%%
 
-#rules = {}
-
-
-#ldefs = d["layerDefinitions"][0]
+# TODO 
+# get & set renderer_type 
+# get & set geometry Types
+# Build Renderers based on Geometry types
 """
-fields = []
-if "fieldDescriptions" in ldefs["featureTable"]:
-    for field_desc in ldefs["featureTable"]["fieldDescriptions"]:
-        fields.append(field_desc["fieldName"])
+Rule Based = RuleRenderer
+Categorized = categorizedSymbol
+Graduated = graduatedSymbol
+No Symbol = nullSymbol
+Single Symbol = singleSymbol
 
+## Point Only, Might not be applicable for ArcGIS
+Point Cluster = pointCluster
+Point Displacement = pointDisplacement
+Point Heatmap = heatmapRenderer
 
+"""
 
-labelClasses = ldefs["labelClasses"][0]
-renderer = ldefs["renderer"]
-field = renderer["fields"]
-symbols = renderer["defaultSymbol"]
-defaultSymbol = symbols["symbol"]
-groups = renderer["groups"][0]["classes"]
-"""        
+renderer_type = None
+geometry_type = None
+qml_header = '<!DOCTYPE qgis PUBLIC "http://mrcc.com/qgis.dtd" "SYSTEM">\n \
+<qgis labelsEnabled="0" simplifyAlgorithm="0" simplifyLocal="1" readOnly="0" hasScaleBasedVisibilityFlag="0" maxScale="0" version="3.4.6-Madeira" simplifyDrawingHints="1" simplifyDrawingTol="1" simplifyMaxScale="1" styleCategories="AllStyleCategories" minScale="1e+08">\n \
+  <flags>\n \
+    <Identifiable>1</Identifiable>\n \
+    <Removable>1</Removable>\n \
+    <Searchable>1</Searchable>\n \
+  </flags>\n \
+  <renderer-v2 symbollevels="0" forceraster="0" enableorderby="0" type="{}">'.format(renderer_type)
+  
+qml_suffix = 'let qml_suffix = `</renderer-v2><layerGeometryType>{}</layerGeometryType> \n\
+</qgis>'.format(geometry_type)
+
+#%%
+# Templates need to be added or imported
+
 #%%
 
 def read_lyrx(file=None):
