@@ -61,9 +61,9 @@ def parseSolidFill(obj):
     
     return symbol
     
-    #j_data = read_lyrx("c:/xampp/htdocs/qml/plan.lyrx")
+    j_data = read_lyrx("c:/xampp/htdocs/qml/plan.lyrx")
 
-def styleLayer(j_data, layer, iface):
+
     layerDef = j_data['layerDefinitions']
     renderers = '';
     for p in layerDef :
