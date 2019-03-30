@@ -17,13 +17,13 @@ def readValueDef(obj):
 def checkSymbolType(obj):    
     obj_arr = {}
     for o in obj:       
-        if not 'def' in obj_arr  :
-            obj_arr['def'] = []
+        if not 'desc' in obj_arr  :
+            obj_arr['desc'] = []
         type = o['type']    
         if  not type in obj_arr  :
             obj_arr[type] = 0
         obj_arr[type] = obj_arr[type] + 1
-        obj_arr['def'].append(o)
+        obj_arr['desc'].append(o)
     
     if 'CIMHatchFill' in obj_arr:
         obj_arr['template'] = 'hatch'
@@ -46,7 +46,7 @@ def parseSolidFill(obj):
     layer = iface.activeLayer()    
     symbol = QgsSymbolV2.defaultSymbol(layer.geometryType())     
     i = 0
-    for ls in obj['def']:
+    for ls in obj['desc']:
         #print ls        
         if ls['type'] == 'CIMSolidFill':
             if ls['color']['type'] == 'CIMRGBColor' :
