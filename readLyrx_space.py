@@ -3,6 +3,7 @@ from qgis.core import *
 import qgis.utils
 from PyQt5.QtGui import * 
 
+point2mm =  0.352778
 def read_lyrx(file=None):    
     with open(file, mode="r", encoding="utf-8") as json_file:  
         data = json.load(json_file)
@@ -79,16 +80,20 @@ def parseLineFill(obj):
                 temp_color = HSVtoRGB(temp_color[0],temp_color[1], temp_color[2])
             if symb_def['color']['type'] == 'CIMCMYKColor':
                 temp_color = cmyk2Rgb(temp_color)
-                
             new_color = QColor.fromRgb(temp_color[0],temp_color[1], temp_color[2])
+            fill_width = symb_def['width'] if 'width' in symb_def else 1
+            fill_width = fill_width*point2mm
             symbol_layer = QgsLinePatternFillSymbolLayer()
             symbol_layer.setColor(new_color)
             symbol_layer.setLineAngle(angle)
+            symbol_layer.setLineWidth(fill_width)
+            #symbol_layer.setLineWidthUnit(mmPerMapUnit)
+            print(symbol_layer.lineWidthUnit())
             layers.append(symbol_layer)
                 
             i = i + 1
-            if i > 1:
-                print(i)
+            #if i > 1:
+                #print(i)
                 #print(angle)
     if len(layers) > 0:
         return layers
