@@ -69,6 +69,8 @@ def parseLineFill(obj):
     symbol = ""
     layers = []
     i = 0
+    first_width = 0
+    first_offset = 0
     for ls in obj['desc']:
         #print(ls)
         if ls['type'] == 'CIMHatchFill':
@@ -83,17 +85,30 @@ def parseLineFill(obj):
             new_color = QColor.fromRgb(temp_color[0],temp_color[1], temp_color[2])
             fill_width = symb_def['width'] if 'width' in symb_def else 1
             fill_width = fill_width*point2mm
-            fill_offset = ls['separation'] if 'separation' in symb_def else 1
-            fill_offset = fill_offset*point2mm
+            fill_distance = ls['separation'] if 'separation' in ls else 0
+            fill_distance = fill_distance*point2mm
+            fill_offset = ls['offsetX'] if 'offsetX' in ls else 0
+            #fill_offset = fill_offset*point2mm
             symbol_layer = QgsLinePatternFillSymbolLayer()
             symbol_layer.setColor(new_color)
             symbol_layer.setLineAngle(angle)
             symbol_layer.setLineWidth(fill_width)
+            symbol_layer.setDistance(fill_distance)
+            if first_offset > 0 :
+                print(first_offset)
+                symbol_layer.setOffset(first_offset)    
+                #symbol_layer.setDistance(fill_distance)
+            if fill_offset > 0:
+                first_offset = fill_width
+            
+            
             #symbol_layer.setLineWidthUnit(mmPerMapUnit)
-            print(symbol_layer.lineWidthUnit())
+            #print(symbol_layer.lineWidthUnit())
             layers.append(symbol_layer)
                 
             i = i + 1
+            if i == 1:
+                first_width = fill_width
             #if i > 1:
                 #print(i)
                 #print(angle)
