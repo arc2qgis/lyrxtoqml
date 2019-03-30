@@ -83,6 +83,8 @@ def parseLineFill(obj):
             new_color = QColor.fromRgb(temp_color[0],temp_color[1], temp_color[2])
             fill_width = symb_def['width'] if 'width' in symb_def else 1
             fill_width = fill_width*point2mm
+            fill_offset = ls['separation'] if 'separation' in symb_def else 1
+            fill_offset = fill_offset*point2mm
             symbol_layer = QgsLinePatternFillSymbolLayer()
             symbol_layer.setColor(new_color)
             symbol_layer.setLineAngle(angle)
