@@ -4,9 +4,9 @@ import qgis.utils
 from PyQt5.QtGui import * 
 
 def read_lyrx(file=None):    
-    with open(file) as json_file:  
+    with open(file, mode="r", encoding="utf-8") as json_file:  
         data = json.load(json_file)
-        
+        print(data)    
     return data
         
 #%% 
@@ -61,49 +61,49 @@ def parseSolidFill(obj):
     
     return symbol
     
-    j_data = read_lyrx("c:/xampp/htdocs/qml/plan.lyrx")
+j_data = read_lyrx("c:/xampp/htdocs/lyrxtoqml_d/plan.lyrx")
 
 
-    layerDef = j_data['layerDefinitions']
-    renderers = '';
-    for p in layerDef :
-        print(p['name'])
-        renderers = p['renderer']
-    
-    classes = renderers["groups"][0]["classes"]
-    #print(classes)
-    symbols_labels = []
-    symbol_layers = []
-    symbol_values = []
-    for c in classes :
-        print(c)
-        symbol_layers.append(readValueDef(c))
-        symbols_labels.append(c['label'])
-        symbol_values.append(c['values'][0]['fieldValues'])
-    
-    #print(symbol_values)
-    categories = []
-    
-    idx = 0
-    for sl in symbol_layers:
-        symbol_def = checkSymbolType(sl)
-        #print(symbol_def)
-        #if not symbol_def['template'] == "hatch":
-            #if not 'template_line_num' in symbol_def:
-        ret = parseSolidFill(symbol_def)
-        if not ret == '':
-            category = QgsRendererCategory(symbol_values[idx][0], ret, symbols_labels[idx])
-            categories.append(category)    
-        idx = idx + 1
-    
-    
-    print(categories)
-    
-    renderer = QgsCategorizedSymbolRenderer('MAVAT_CODE', categories)
-    
-    # assign the created renderer to the layer
-    if renderer is not None:
-        iface.activeLayer().setRenderer(renderer)
-    
-    iface.activeLayer().triggerRepaint()
+layerDef = j_data['layerDefinitions']
+renderers = '';
+for p in layerDef :
+	print(p['name'])
+	renderers = p['renderer']
+
+classes = renderers["groups"][0]["classes"]
+#print(classes)
+symbols_labels = []
+symbol_layers = []
+symbol_values = []
+for c in classes :
+	print(c)
+	symbol_layers.append(readValueDef(c))
+	symbols_labels.append(c['label'])
+	symbol_values.append(c['values'][0]['fieldValues'])
+
+#print(symbol_values)
+categories = []
+
+idx = 0
+for sl in symbol_layers:
+	symbol_def = checkSymbolType(sl)
+	#print(symbol_def)
+	#if not symbol_def['template'] == "hatch":
+		#if not 'template_line_num' in symbol_def:
+	ret = parseSolidFill(symbol_def)
+	if not ret == '':
+		category = QgsRendererCategory(symbol_values[idx][0], ret, symbols_labels[idx])
+		categories.append(category)    
+	idx = idx + 1
+
+
+print(categories)
+
+renderer = QgsCategorizedSymbolRenderer('MAVAT_CODE', categories)
+
+# assign the created renderer to the layer
+if renderer is not None:
+	iface.activeLayer().setRenderer(renderer)
+
+iface.activeLayer().triggerRepaint()
 
