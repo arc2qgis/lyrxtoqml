@@ -53,7 +53,10 @@ def parseSolidFill(obj):
             symbol = QgsSymbol.defaultSymbol(layer.geometryType())
             symbol.setColor(new_color)            
             i = i + 1
-    
+    if symbol == '':
+            symbol = QgsSymbol.defaultSymbol(layer.geometryType())
+            new_color = colorToRgbArray([255,255,255,0], 'CIMRGBColor')
+            symbol.setColor(new_color) 
     return symbol
 
 def parseStroke(obj, symb):    
@@ -67,7 +70,8 @@ def parseStroke(obj, symb):
         if ls['type'] == 'CIMSolidStroke':
             temp_color = ls['color']['values']
             new_color = colorToRgbArray(temp_color, ls['color']['type'])
-            stroke_width = ls['width'] if ls['width'] < 2 else ls['width']*point2mm             
+            #stroke_width = ls['width'] if ls['width'] < 2 else ls['width']*point2mm             
+            stroke_width = ls['width']*point2mm             
             if  i == 0:
                 symb.symbolLayer(0).setStrokeColor(new_color)
                 symb.symbolLayer(0).setStrokeWidth(stroke_width)                
@@ -110,16 +114,18 @@ def parseLineFill(obj):
             if first_offset > 0 :
                 print(first_offset)                
                 symbol_layer.setLineWidth(first_offset)                
-                symbol_layer.setOffset(first_offset)                
+                symbol_layer.setOffset(first_offset)   
+                print("second")             
             # Save first width for double hatch pattern - mavat
-            if fill_offset > 0:
-                first_offset = fill_width
+            #if fill_offset > 0:
+            #    first_offset = fill_width
+                
                                 
             layers.append(symbol_layer)
                 
             i = i + 1
             if i == 1:
-                first_width = fill_width
+                first_offset = fill_width
             #if i > 1:
                 #print(i)
                 #print(angle)
@@ -162,17 +168,14 @@ for p in layerDef :
     renderers = p['renderer']
 
 classes = renderers["groups"][0]["classes"]
-#print(classes)
 symbols_labels = []
 symbol_layers = []
 symbol_values = []
-for c in classes :
-    #print(c)
+for c in classes :    
     symbol_layers.append(readValueDef(c))
     symbols_labels.append(c['label'])
     symbol_values.append(c['values'][0]['fieldValues'])
 
-#print(symbol_values)
 categories = []
 
 idx = 0
@@ -194,20 +197,14 @@ for sl in symbol_layers:
         if not ret == '':
             if not line_ret == '':                
                 for line in line_ret:
-                    ret.appendSymbolLayer(line)
-                    #print(line.lineAngle())
+                    ret.appendSymbolLayer(line)                    
                 if 'template_stroke_num' in symbol_def and not ret == '':
                     ret = parseStroke(symbol_def, ret)   
                 category = QgsRendererCategory(symbol_values[idx][0], ret, symbols_labels[idx])
                 categories.append(category)
     
-    
-           
-       
     idx = idx + 1
 
-
-#print(categories)
 
 renderer = QgsCategorizedSymbolRenderer('MAVAT_CODE', categories)
 
