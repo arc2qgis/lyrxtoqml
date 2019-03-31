@@ -65,6 +65,34 @@ def parseSolidFill(obj):
     
     return symbol
 
+def parseStroke(obj, symb):    
+        
+    layer = iface.activeLayer()    
+     
+    layers = []
+    i = 0
+    for ls in obj['desc']:
+        #print(ls)
+        if ls['type'] == 'CIMSolidStroke':
+            temp_color = ls['color']['values']
+            if ls['color']['type'] == 'CIMHSVColor':
+                temp_color = HSVtoRGB(temp_color[0],temp_color[1], temp_color[2])
+            if ls['color']['type'] == 'CIMCMYKColor':
+                temp_color = cmyk2Rgb(temp_color)
+            color_str = 'color_rgba(' + str(temp_color[0]) + "," + str(temp_color[1]) + "," + str(temp_color[2]) + ')'
+            stroke_width = ls['width']*point2mm
+            #symb.symbolLayer(0).setDataDefinedProperty(QgsSymbolLayer.PropertyStrokeColor, QgsProperty.fromValue(color_str))
+            symb.symbolLayer(0).setStrokeColor(color_str)
+            return symb
+            #symbol = QgsSymbol.defaultSymbol(layer.geometryType())
+            #symbol.setColor(QColor.fromRgb(temp_color[0],temp_color[1], temp_color[2]))
+            #print(QColor(symbol.color()).getRgb())
+            i = i + 1
+            #if i > 1:
+            #    print(i)
+    
+    return symb   
+
 def parseLineFill(obj):
     symbol = ""
     layers = []
@@ -197,6 +225,8 @@ for sl in symbol_layers:
     symbol_def = checkSymbolType(sl)
     ret = parseSolidFill(symbol_def)
     if not ret == '':
+        if 'template_stroke_num' in symbol_def and not ret == '':
+            ret = parseStroke(symbol_def, ret)
         if not symbol_def['template'] == 'hatch':
             category = QgsRendererCategory(symbol_values[idx][0], ret, symbols_labels[idx])
             categories.append(category)
@@ -212,6 +242,8 @@ for sl in symbol_layers:
                     #print(line.lineAngle())
                 category = QgsRendererCategory(symbol_values[idx][0], ret, symbols_labels[idx])
                 categories.append(category)
+    
+    
                 
        
     idx = idx + 1
