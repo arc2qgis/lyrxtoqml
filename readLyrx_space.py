@@ -130,16 +130,15 @@ def parseLineFill(obj):
             symbol_layer.setLineAngle(angle)
             symbol_layer.setLineWidth(fill_width)
             symbol_layer.setDistance(fill_distance)
+            # If second in double hatch define width and offset from the first width
             if first_offset > 0 :
-                print(first_offset)
-                symbol_layer.setOffset(first_offset)    
-                #symbol_layer.setDistance(fill_distance)
+                print(first_offset)                
+                symbol_layer.setLineWidth(first_offset)                
+                symbol_layer.setOffset(first_offset)                
+            # Save first width for double hatch pattern - mavat
             if fill_offset > 0:
                 first_offset = fill_width
-            
-            
-            #symbol_layer.setLineWidthUnit(mmPerMapUnit)
-            #print(symbol_layer.lineWidthUnit())
+                                
             layers.append(symbol_layer)
                 
             i = i + 1
@@ -205,7 +204,7 @@ def cmyk2Rgb(cmyk_array):
     #return color
     return [r, g, b]
     
-j_data = read_lyrx("c:/xampp/htdocs/lyrx/plan.lyrx")
+j_data = read_lyrx("c:/xampp/htdocs/lyrxtoqml_d/plan.lyrx")
 
 
 layerDef = j_data['layerDefinitions']
