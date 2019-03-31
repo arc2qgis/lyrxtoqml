@@ -80,10 +80,19 @@ def parseStroke(obj, symb):
             if ls['color']['type'] == 'CIMCMYKColor':
                 temp_color = cmyk2Rgb(temp_color)
             color_str = 'color_rgba(' + str(temp_color[0]) + "," + str(temp_color[1]) + "," + str(temp_color[2]) + ')'
-            stroke_width = ls['width']*point2mm
+            stroke_width = ls['width'] if ls['width'] < 2 else ls['width']*point2mm 
             #symb.symbolLayer(0).setDataDefinedProperty(QgsSymbolLayer.PropertyStrokeColor, QgsProperty.fromValue(color_str))
-            symb.symbolLayer(0).setStrokeColor(color_str)
-            return symb
+            if  i == 0:
+                symb.symbolLayer(0).setStrokeColor(QColor.fromRgb(temp_color[0],temp_color[1], temp_color[2]))
+                symb.symbolLayer(0).setStrokeWidth(stroke_width)
+                #return symb
+            else :
+                
+                symbol_layer = QgsSimpleFillSymbolLayer()
+                symbol_layer.setColor(QColor.fromRgb(0,0,0,0))
+                symbol_layer.setStrokeColor(QColor.fromRgb(temp_color[0],temp_color[1], temp_color[2]))
+                symbol_layer.setStrokeWidth(stroke_width)
+                symb.appendSymbolLayer(symbol_layer)
             #symbol = QgsSymbol.defaultSymbol(layer.geometryType())
             #symbol.setColor(QColor.fromRgb(temp_color[0],temp_color[1], temp_color[2]))
             #print(QColor(symbol.color()).getRgb())
