@@ -88,14 +88,13 @@ def parseStroke(obj, symb):
                 #return symb
             else :
                 
-                symbol_layer = QgsSimpleFillSymbolLayer()
-                symbol_layer.setColor(QColor.fromRgb(0,0,0,0))
-                symbol_layer.setStrokeColor(QColor.fromRgb(temp_color[0],temp_color[1], temp_color[2]))
-                symbol_layer.setStrokeWidth(stroke_width)
+                symbol_layer = QgsSimpleLineSymbolLayer()
+                symbol_layer.setColor(QColor.fromRgb(temp_color[0],temp_color[1], temp_color[2]))
+                symbol_layer.setWidth(stroke_width)
+                symbol_layer.setOffset(stroke_width/2)
+                symbol_layer.setPenJoinStyle(0)
                 symb.appendSymbolLayer(symbol_layer)
-            #symbol = QgsSymbol.defaultSymbol(layer.geometryType())
-            #symbol.setColor(QColor.fromRgb(temp_color[0],temp_color[1], temp_color[2]))
-            #print(QColor(symbol.color()).getRgb())
+            
             i = i + 1
             #if i > 1:
             #    print(i)
@@ -206,7 +205,7 @@ def cmyk2Rgb(cmyk_array):
     #return color
     return [r, g, b]
     
-j_data = read_lyrx("c:/xampp/htdocs/lyrxtoqml_d/plan.lyrx")
+j_data = read_lyrx("c:/xampp/htdocs/lyrx/plan.lyrx")
 
 
 layerDef = j_data['layerDefinitions']
@@ -234,8 +233,7 @@ for sl in symbol_layers:
     symbol_def = checkSymbolType(sl)
     ret = parseSolidFill(symbol_def)
     if not ret == '':
-        if 'template_stroke_num' in symbol_def and not ret == '':
-            ret = parseStroke(symbol_def, ret)
+
         if not symbol_def['template'] == 'hatch':
             category = QgsRendererCategory(symbol_values[idx][0], ret, symbols_labels[idx])
             categories.append(category)
@@ -253,7 +251,8 @@ for sl in symbol_layers:
                 categories.append(category)
     
     
-                
+    if 'template_stroke_num' in symbol_def and not ret == '':
+        ret = parseStroke(symbol_def, ret)            
        
     idx = idx + 1
 
