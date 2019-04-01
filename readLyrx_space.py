@@ -3,6 +3,7 @@ from qgis.core import *
 import qgis.utils
 from PyQt5.QtGui import * 
 
+layer = iface.activeLayer()
 point2mm =  0.352778
 def read_lyrx(file=None):    
     with open(file, mode="r", encoding="utf-8") as json_file:  
@@ -42,27 +43,25 @@ def checkSymbolType(obj):
     return obj_arr
 
 def parseSolidFill(obj):    
-    solidFill = ''    
-    layer = iface.activeLayer()    
-    symbol = ""    
+    symbol = ""
     i = 0
-    for ls in obj['desc']:        
+    for ls in obj['desc']:
         if ls['type'] == 'CIMSolidFill':
             temp_color = ls['color']['values']
             new_color = colorToRgbArray(temp_color, ls['color']['type'])            
             symbol = QgsSymbol.defaultSymbol(layer.geometryType())
             symbol.setColor(new_color)            
             i = i + 1
+
+    # Add default shape fill.
     if symbol == '':
             symbol = QgsSymbol.defaultSymbol(layer.geometryType())
             new_color = colorToRgbArray([255,255,255,0], 'CIMRGBColor')
-            symbol.setColor(new_color) 
+            symbol.setColor(new_color)
+
     return symbol
 
-def parseStroke(obj, symb):    
-        
-    layer = iface.activeLayer()    
-     
+def parseStroke(obj, symb):                
     layers = []
     i = 0
     for ls in obj['desc']:
@@ -75,11 +74,14 @@ def parseStroke(obj, symb):
             if  i == 0:
                 symb.symbolLayer(0).setStrokeColor(new_color)
                 symb.symbolLayer(0).setStrokeWidth(stroke_width)                
-            else :                
+            else :
+                # Add simple line symbol layer (stroke)
                 symbol_layer = QgsSimpleLineSymbolLayer()
                 symbol_layer.setColor(new_color)
                 symbol_layer.setWidth(stroke_width)
+                # TODO: Check offset def (in poly etc)
                 symbol_layer.setOffset(stroke_width/2)
+                # TODO: Read join and shape
                 symbol_layer.setPenJoinStyle(0)
                 symb.appendSymbolLayer(symbol_layer)            
             i = i + 1            
@@ -87,48 +89,46 @@ def parseStroke(obj, symb):
     return symb   
 
 def parseLineFill(obj):
+    isDoubleHatch = False
+    isOffsetEqFirstWidth = True 
     symbol = ""
     layers = []
     i = 0
     first_width = 0
-    first_offset = 0
+    prev_hatch = 0
     for ls in obj['desc']:        
-        if ls['type'] == 'CIMHatchFill':
-            symbol_layer = ''
+        if ls['type'] == 'CIMHatchFill':            
             symb_def = ls['lineSymbol']['symbolLayers'][0]
-            angle = ls['rotation'] if 'rotation' in ls else 0
+            # New definitions
+            angle = ls['rotation'] if 'rotation' in ls else 0            
             temp_color = symb_def['color']['values']
             new_color = colorToRgbArray(temp_color, symb_def['color']['type'])
+            # Hatch definitions
             fill_width = symb_def['width'] if 'width' in symb_def else 1
             fill_width = fill_width*point2mm
             fill_distance = ls['separation'] if 'separation' in ls else 0
             fill_distance = fill_distance*point2mm
             fill_offset = ls['offsetX'] if 'offsetX' in ls else 0
-            #fill_offset = fill_offset*point2mm
+            fill_offset = fill_offset*point2mm
+            # Create symbol
             symbol_layer = QgsLinePatternFillSymbolLayer()
             symbol_layer.setColor(new_color)
             symbol_layer.setLineAngle(angle)
             symbol_layer.setLineWidth(fill_width)
-            symbol_layer.setDistance(fill_distance)
-            # If second in double hatch define width and offset from the first width
-            if first_offset > 0 :
-                print(first_offset)                
-                symbol_layer.setLineWidth(first_offset)                
-                symbol_layer.setOffset(first_offset)   
-                print("second")             
-            # Save first width for double hatch pattern - mavat
-            #if fill_offset > 0:
-            #    first_offset = fill_width
-                
-                                
+            symbol_layer.setDistance(fill_distance)            
+            # Tweak save the first hatch width and use as offset
+            # TODO: Real fix, mark problematic files and unusual offsets
+            if prev_hatch > 0 :
+                symbol_layer.setLineWidth(fill_width)
+                symbol_layer.setOffset(fill_width)
+                isOffsetEqFirstWidth = fill_width == prev_hatch
+                isDoubleHatch = True
+
             layers.append(symbol_layer)
-                
+            if i == 0:
+                prev_hatch = fill_width
             i = i + 1
-            if i == 1:
-                first_offset = fill_width
-            #if i > 1:
-                #print(i)
-                #print(angle)
+                
     if len(layers) > 0:
         return layers
     else:
@@ -144,11 +144,9 @@ def cmyk2Rgb(cmyk_array):
     g = int((1 - ((m + k)/100)) * 255)
     b = int((1 - ((y + k)/100)) * 255)
     
-    color = ', '.join([str(x) for x in [r,g,b]])
-    #return color
     return [r, g, b]
 
-def colorToRgbArray(color_array, type):    
+def colorToRgbArray(color_array, type):
     new_color = QColor.fromRgb(color_array[0],color_array[1], color_array[2])        
     if type == 'CIMHSVColor':
         new_color = QColor.fromHsvF(color_array[0]/360,color_array[1]/100, color_array[2]/100,1)
@@ -181,27 +179,22 @@ categories = []
 idx = 0
 for sl in symbol_layers:
     symbol_def = checkSymbolType(sl)
-    ret = parseSolidFill(symbol_def)
-    if not ret == '':
-
-        if not symbol_def['template'] == 'hatch':
+    ret = parseSolidFill(symbol_def)    
+    if not symbol_def['template'] == 'hatch':
+        if 'template_stroke_num' in symbol_def and not ret == '':
+            ret = parseStroke(symbol_def, ret)
+        category = QgsRendererCategory(symbol_values[idx][0], ret, symbols_labels[idx])
+        categories.append(category)
+    elif symbol_def['template'] == 'hatch':
+        print ("val :" + str(symbol_values[idx][0]))
+        line_ret = parseLineFill(symbol_def)        
+        if not line_ret == '':                
+            for line in line_ret:
+                ret.appendSymbolLayer(line)                    
             if 'template_stroke_num' in symbol_def and not ret == '':
-                ret = parseStroke(symbol_def, ret)
+                ret = parseStroke(symbol_def, ret)   
             category = QgsRendererCategory(symbol_values[idx][0], ret, symbols_labels[idx])
             categories.append(category)
-    #else:
-        #print("no color")
-    if symbol_def['template'] == 'hatch':
-        print ("val :" + str(symbol_values[idx][0]))
-        line_ret = parseLineFill(symbol_def)
-        if not ret == '':
-            if not line_ret == '':                
-                for line in line_ret:
-                    ret.appendSymbolLayer(line)                    
-                if 'template_stroke_num' in symbol_def and not ret == '':
-                    ret = parseStroke(symbol_def, ret)   
-                category = QgsRendererCategory(symbol_values[idx][0], ret, symbols_labels[idx])
-                categories.append(category)
     
     idx = idx + 1
 
