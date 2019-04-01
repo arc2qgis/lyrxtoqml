@@ -4,6 +4,12 @@ import qgis.utils
 from PyQt5.QtGui import * 
 
 layer = iface.activeLayer()
+geometry_type_str = QgsWkbTypes.displayString(int(layer.wkbType()))
+geometry_type = layer.wkbType()
+
+
+geometry_general_type_str = geometry_type_str.replace('Multi', '').lower()  
+print(geometry_general_type_str)
 point2mm =  0.352778
 def read_lyrx(file=None):    
     with open(file, mode="r", encoding="utf-8") as json_file:  
@@ -156,54 +162,79 @@ def colorToRgbArray(color_array, type):
     
     return new_color
     
-j_data = read_lyrx("c:/xampp/htdocs/lyrxtoqml_d/lyrx samples/plan2.lyrx")
+#j_data = read_lyrx("c:/xampp/htdocs/lyrxtoqml_d/lyrx samples/plan2.lyrx")
+j_data = read_lyrx("c:/xampp/htdocs/lyrxtoqml_d/lyrx samples/rami plan.lyrx")
 
 
 layerDef = j_data['layerDefinitions']
-renderers = '';
+renderers = [];
+renderers_symb_type = []
+
 for p in layerDef :
     print(p['name'])
-    renderers = p['renderer']
+    temp_renderer = p['renderer'] if 'renderer' in p else ''
+    renderers.append(temp_renderer)
+    if not temp_renderer == '':
+        rend_type = temp_renderer['symbol']['type'] if 'symbol' in temp_renderer else  temp_renderer['defaultSymbol']['symbol']['type']
+        renderers_symb_type.append(rend_type.lower())
 
-classes = renderers["groups"][0]["classes"]
-symbols_labels = []
-symbol_layers = []
-symbol_values = []
-for c in classes :    
-    symbol_layers.append(readValueDef(c))
-    symbols_labels.append(c['label'])
-    symbol_values.append(c['values'][0]['fieldValues'])
+# Find a renderer with the active layer field attribute
+rend_to_check = []
+x = 0
+for r in renderers_symb_type:
+    if geometry_general_type_str in r:
+        rend_to_check.append(x)
+    x = x + 1
 
-categories = []
+rend_idx = -1
+print(rend_to_check)
+for z in rend_to_check:
+    field_exist = layer.fields().indexFromName(renderers[z]['fields'][0])
+    if field_exist > -1:
+        rend_idx = z
+#rend_idx = rend_to_check[1]
+if rend_idx > -1:
+    class_field = renderers[rend_idx]['fields'][0] if len(renderers[rend_idx]['fields']) > 0 else 'CODE'
+    print(class_field)
+    classes = renderers[rend_idx]["groups"][0]["classes"]
+    symbols_labels = []
+    symbol_layers = []
+    symbol_values = []
+    for c in classes :    
+        symbol_layers.append(readValueDef(c))
+        symbols_labels.append(c['label'])
+        symbol_values.append(c['values'][0]['fieldValues'])
 
-idx = 0
-for sl in symbol_layers:
-    symbol_def = checkSymbolType(sl)
-    ret = parseSolidFill(symbol_def)    
-    if not symbol_def['template'] == 'hatch':
-        if 'template_stroke_num' in symbol_def and not ret == '':
-            ret = parseStroke(symbol_def, ret)
-        category = QgsRendererCategory(symbol_values[idx][0], ret, symbols_labels[idx])
-        categories.append(category)
-    elif symbol_def['template'] == 'hatch':
-        print ("val :" + str(symbol_values[idx][0]))
-        line_ret = parseLineFill(symbol_def)        
-        if not line_ret == '':                
-            for line in line_ret:
-                ret.appendSymbolLayer(line)                    
+    categories = []
+
+    idx = 0
+    for sl in symbol_layers:
+        symbol_def = checkSymbolType(sl)
+        ret = parseSolidFill(symbol_def)    
+        if not symbol_def['template'] == 'hatch':
             if 'template_stroke_num' in symbol_def and not ret == '':
-                ret = parseStroke(symbol_def, ret)   
+                ret = parseStroke(symbol_def, ret)
             category = QgsRendererCategory(symbol_values[idx][0], ret, symbols_labels[idx])
             categories.append(category)
-    
-    idx = idx + 1
+        elif symbol_def['template'] == 'hatch':
+            print ("val :" + str(symbol_values[idx][0]))
+            line_ret = parseLineFill(symbol_def)        
+            if not line_ret == '':
+                for line in line_ret:
+                    ret.appendSymbolLayer(line)
+                if 'template_stroke_num' in symbol_def and not ret == '':
+                    ret = parseStroke(symbol_def, ret)   
+                category = QgsRendererCategory(symbol_values[idx][0], ret, symbols_labels[idx])
+                categories.append(category)
+        
+        idx = idx + 1
 
 
-renderer = QgsCategorizedSymbolRenderer('MAVAT_CODE', categories)
+    renderer = QgsCategorizedSymbolRenderer(class_field, categories)
 
-# assign the created renderer to the layer
-if renderer is not None:
-    iface.activeLayer().setRenderer(renderer)
+    # assign the created renderer to the layer
+    if renderer is not None:
+        iface.activeLayer().setRenderer(renderer)
 
-iface.activeLayer().triggerRepaint()
+    iface.activeLayer().triggerRepaint()
 
