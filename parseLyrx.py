@@ -205,8 +205,8 @@ def parseCharacterFill(symb_def):
     return symbol
     
 #j_data = read_lyrx("c:/xampp/htdocs/lyrxtoqml_d/lyrx samples/plan2.lyrx")
-#j_data = read_lyrx("c:/xampp/htdocs/lyrxtoqml_d/lyrx samples/rami plan.lyrx")
-j_data = read_lyrx("c:/xampp/htdocs/lyrxtoqml_d/lyrx samples/nekudati.lyrx")
+j_data = read_lyrx("c:/xampp/htdocs/lyrxtoqml_d/lyrx samples/migrashim.lyrx")
+#j_data = read_lyrx("c:/xampp/htdocs/lyrxtoqml_d/lyrx samples/nekudati.lyrx")
 
 
 simple_symbol = False
