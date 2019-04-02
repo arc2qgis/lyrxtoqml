@@ -205,7 +205,9 @@ def parseCharacterFill(symb_def):
     return symbol
     
 #j_data = read_lyrx("c:/xampp/htdocs/lyrxtoqml_d/lyrx samples/plan2.lyrx")
-j_data = read_lyrx("c:/xampp/htdocs/lyrxtoqml_d/lyrx samples/rami plan.lyrx")
+#j_data = read_lyrx("c:/xampp/htdocs/lyrxtoqml_d/lyrx samples/rami plan.lyrx")
+j_data = read_lyrx("c:/xampp/htdocs/lyrxtoqml_d/lyrx samples/nekudati.lyrx")
+
 
 simple_symbol = False
 layerDef = j_data['layerDefinitions']
@@ -249,6 +251,7 @@ if rend_idx < 0:
 if rend_idx > -1 and not simple_symbol:
     categories = []
     class_field = renderers[rend_idx]['fields'][0] if len(renderers[rend_idx]['fields']) > 0 else 'CODE'
+    class_field2 = renderers[rend_idx]['fields'][1] if len(renderers[rend_idx]['fields']) > 1 else ''
     print(class_field)
     classes = renderers[rend_idx]["groups"][0]["classes"]
     symbols_labels = []
@@ -295,12 +298,15 @@ if rend_idx > -1 and not simple_symbol:
             ret.appendSymbolLayer(rl)
             #ret.symbolLayer(0).markerOffsetWithWidthAndHeight(ret, max_size, max_size)
             x = x + 1
-            
-        category = QgsRendererCategory(symbol_values[idx][0], ret, symbols_labels[idx])
+
+        symbol_val_prep = symbol_values[idx][0] + ", " + symbol_values[idx][1] if len(symbol_values[idx]) > 1 else symbol_values[idx][0]
+        #category = QgsRendererCategory(symbol_values[idx][0], ret, symbols_labels[idx])
+        category = QgsRendererCategory(symbol_val_prep, ret, symbols_labels[idx])
         categories.append(category)
         idx = idx + 1
-
-    renderer = QgsCategorizedSymbolRenderer(class_field, categories)
+    
+    concat_str =  ", " + "', ', " + class_field2 + ")" if not class_field2 == "" else ")"
+    renderer = QgsCategorizedSymbolRenderer("concat(" + class_field + concat_str, categories)
     
 elif renderers[rend_idx]['type'] == 'CIMSimpleRenderer' and simple_symbol:
     single_symbology = parseSimpleRenderer(renderers[rend_idx])
