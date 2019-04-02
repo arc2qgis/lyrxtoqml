@@ -48,6 +48,16 @@ def checkSymbolType(obj):
     
     return obj_arr
 
+def parseSymbolLayerSolidFill(layers):
+    colors = []
+    for l in layers:
+        if l['type'] == 'CIMSolidFill':            
+            temp_color = l['color']['values']
+            new_color = colorToRgbArray(temp_color, l['color']['type'])
+            colors.append(new_color)
+    
+    return colors
+    
 def parseSolidFill(obj):    
     symbol = ""
     i = 0
@@ -161,14 +171,45 @@ def colorToRgbArray(color_array, type):
         new_color = QColor.fromRgb(temp_color[0],temp_color[1], temp_color[2])
     
     return new_color
+
+def parseSimpleRenderer(obj):
+    #for a in obj:
+    #    print(a)
+    symbol = ''
+    symb_def = obj['symbol']['symbol']['symbolLayers'][0]
+    for ob in symb_def:
+        print(ob)
+    if 'characterIndex' in symb_def and symb_def['type'] == 'CIMCharacterMarker':
+        symbol = parseCharacterFill(symb_def)
+        
+                
+    return symbol
+
+def parseCharacterFill(symb_def):
+    symbol = QgsFontMarkerSymbolLayer()
+    symbol.setFontFamily(symb_def['fontFamilyName'])
+    symbol.setCharacter(chr(symb_def['characterIndex']))
+    symbol.setSize(symb_def['size']*point2mm)
+    if 'rotation' in symb_def:
+        symbol.setAngle(symb_def['rotation'])
+    print(symb_def['characterIndex'])
+    if 'symbol' in symb_def:
+        if 'symbolLayers' in symb_def['symbol']:
+            color = parseSymbolLayerSolidFill(symb_def['symbol']['symbolLayers'])
+            print(color)
+            symbol.setColor(color[0])
+        
+    return symbol
     
 #j_data = read_lyrx("c:/xampp/htdocs/lyrxtoqml_d/lyrx samples/plan2.lyrx")
 j_data = read_lyrx("c:/xampp/htdocs/lyrxtoqml_d/lyrx samples/rami plan.lyrx")
 
-
+simple_symbol = False
 layerDef = j_data['layerDefinitions']
+renderer = ''
 renderers = [];
 renderers_symb_type = []
+dataset_names = []
 
 for p in layerDef :
     print(p['name'])
@@ -177,7 +218,11 @@ for p in layerDef :
     if not temp_renderer == '':
         rend_type = temp_renderer['symbol']['type'] if 'symbol' in temp_renderer else  temp_renderer['defaultSymbol']['symbol']['type']
         renderers_symb_type.append(rend_type.lower())
+        dataset = p['featureTable']['dataConnection']['dataset']
+        dataset_names.append(dataset)
 
+print(renderers_symb_type)
+print(dataset_names)
 # Find a renderer with the active layer field attribute
 rend_to_check = []
 x = 0
@@ -192,49 +237,76 @@ for z in rend_to_check:
     field_exist = layer.fields().indexFromName(renderers[z]['fields'][0])
     if field_exist > -1:
         rend_idx = z
-#rend_idx = rend_to_check[1]
-if rend_idx > -1:
+if rend_idx < 0:
+    active_name = layer.sourceName()
+    rend_idx = dataset_names.index(active_name)
+    simple_symbol = True
+
+
+if rend_idx > -1 and not simple_symbol:
+    categories = []
     class_field = renderers[rend_idx]['fields'][0] if len(renderers[rend_idx]['fields']) > 0 else 'CODE'
     print(class_field)
     classes = renderers[rend_idx]["groups"][0]["classes"]
     symbols_labels = []
     symbol_layers = []
-    symbol_values = []
+    symbol_values = []    
     for c in classes :    
         symbol_layers.append(readValueDef(c))
         symbols_labels.append(c['label'])
         symbol_values.append(c['values'][0]['fieldValues'])
-
-    categories = []
-
+    
     idx = 0
     for sl in symbol_layers:
+        print(sl[0]['type'])
         symbol_def = checkSymbolType(sl)
         ret = parseSolidFill(symbol_def)    
         if not symbol_def['template'] == 'hatch':
-            if 'template_stroke_num' in symbol_def and not ret == '':
-                ret = parseStroke(symbol_def, ret)
-            category = QgsRendererCategory(symbol_values[idx][0], ret, symbols_labels[idx])
-            categories.append(category)
+            print("simple Fill")
+            #if 'template_stroke_num' in symbol_def and not ret == '':
+                #ret = parseStroke(symbol_def, ret)
+            #category = QgsRendererCategory(symbol_values[idx][0], ret, symbols_labels[idx])
+            #categories.append(category)
         elif symbol_def['template'] == 'hatch':
             print ("val :" + str(symbol_values[idx][0]))
             line_ret = parseLineFill(symbol_def)        
             if not line_ret == '':
                 for line in line_ret:
                     ret.appendSymbolLayer(line)
-                if 'template_stroke_num' in symbol_def and not ret == '':
-                    ret = parseStroke(symbol_def, ret)   
-                category = QgsRendererCategory(symbol_values[idx][0], ret, symbols_labels[idx])
-                categories.append(category)
         
+        if 'template_stroke_num' in symbol_def and not ret == '':
+            ret = parseStroke(symbol_def, ret)  
+        print(len(sl))
+        #if 'characterIndex' in sl[0] and sl[0]['type'] == 'CIMCharacterMarker':        
+        layers = []
+        for charSl in sl:            
+            if 'characterIndex' in charSl and charSl['type'] == 'CIMCharacterMarker':
+                symbol = parseCharacterFill(charSl)
+                if not symbol == '':
+                    layers.append(symbol)                   
+            
+        # Add the font fill in reverse order
+        for rl in reversed(layers):
+            ret.appendSymbolLayer(rl)
+            
+        category = QgsRendererCategory(symbol_values[idx][0], ret, symbols_labels[idx])
+        categories.append(category)
         idx = idx + 1
 
-
     renderer = QgsCategorizedSymbolRenderer(class_field, categories)
+    
+elif renderers[rend_idx]['type'] == 'CIMSimpleRenderer' and simple_symbol:
+    single_symbology = parseSimpleRenderer(renderers[rend_idx])
+    if not single_symbology == '':
+        print('uni')
+        symbol = QgsSymbol.defaultSymbol(layer.geometryType())
+        symbol.changeSymbolLayer(0, single_symbology)
+        renderer = QgsSingleSymbolRenderer(symbol)
+else:
+    print("No matching lyrx symbology fields found for the active layer")
 
-    # assign the created renderer to the layer
-    if renderer is not None:
-        iface.activeLayer().setRenderer(renderer)
-
+# assign the created renderer to the layer
+if not renderer == '' :
+    iface.activeLayer().setRenderer(renderer)
     iface.activeLayer().triggerRepaint()
 
