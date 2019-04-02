@@ -9,7 +9,7 @@ geometry_type = layer.wkbType()
 
 
 geometry_general_type_str = geometry_type_str.replace('Multi', '').lower()  
-print(geometry_general_type_str)
+#print(geometry_general_type_str)
 point2mm =  0.352778
 def read_lyrx(file=None):    
     with open(file, mode="r", encoding="utf-8") as json_file:  
@@ -177,36 +177,49 @@ def parseSimpleRenderer(obj):
     #    print(a)
     symbol = ''
     symb_def = obj['symbol']['symbol']['symbolLayers'][0]
-    for ob in symb_def:
-        print(ob)
+    #for ob in symb_def:
+        #print(ob)
     if 'characterIndex' in symb_def and symb_def['type'] == 'CIMCharacterMarker':
-        symbol = parseCharacterFill(symb_def)
+        symbol = parseCharacterFill(symb_def, 0)
         
                 
     return symbol
 
-def parseCharacterFill(symb_def):
+def parseCharacterFill(symb_def, max_size):
     symbol = QgsFontMarkerSymbolLayer()
     symbol.setFontFamily(symb_def['fontFamilyName'])
     symbol.setCharacter(chr(symb_def['characterIndex']))
+    new_size = symb_def['size']*point2mm
     symbol.setSize(symb_def['size']*point2mm)
     #symbol.markerOffsetWithWidthAndHeight()
     if 'rotation' in symb_def:
-        symbol.setAngle(symb_def['rotation'])
+        new_angle = symb_def['rotation']
+        if new_angle < 0:
+            new_angle = abs(new_angle)
+        elif new_angle > 180:
+            new_angle = 360 - new_angle
+        #new_angle = 360 - abs(symb_def['rotation']) if symb_def['rotation'] < 0 or symb_def['rotation'] > 180 else symb_def['rotation']
+        print(new_angle)
+        print(symb_def['rotation'])
+        symbol.setAngle(new_angle)
         # Fix offset - rotation twaek
-        symbol.setOffset(QPointF(0.3,0.0))
-    print(symb_def['characterIndex'])
+        #symbol.setOffset(QPointF(0.3,0.0))
+        #offset_tweak = (max_size - new_size)/2 if max_size > new_size else 0
+        #print(offset_tweak)
+        #if offset_tweak > 0:
+        #    symbol.setOffset(QPointF(0,0))
+    #print(symb_def['characterIndex'])
     if 'symbol' in symb_def:
         if 'symbolLayers' in symb_def['symbol']:
             color = parseSymbolLayerSolidFill(symb_def['symbol']['symbolLayers'])
-            print(color)
+            #print(color)
             symbol.setColor(color[0])
         
     return symbol
     
 #j_data = read_lyrx("c:/xampp/htdocs/lyrxtoqml_d/lyrx samples/plan2.lyrx")
-j_data = read_lyrx("c:/xampp/htdocs/lyrxtoqml_d/lyrx samples/migrashim.lyrx")
-#j_data = read_lyrx("c:/xampp/htdocs/lyrxtoqml_d/lyrx samples/nekudati.lyrx")
+#j_data = read_lyrx("c:/xampp/htdocs/lyrxtoqml_d/lyrx samples/migrashim.lyrx")
+j_data = read_lyrx("c:/xampp/htdocs/lyrxtoqml_d/lyrx samples/nekudati.lyrx")
 
 
 simple_symbol = False
@@ -252,7 +265,7 @@ if rend_idx > -1 and not simple_symbol:
     categories = []
     class_field = renderers[rend_idx]['fields'][0] if len(renderers[rend_idx]['fields']) > 0 else 'CODE'
     class_field2 = renderers[rend_idx]['fields'][1] if len(renderers[rend_idx]['fields']) > 1 else ''
-    print(class_field)
+    #print(class_field)
     classes = renderers[rend_idx]["groups"][0]["classes"]
     symbols_labels = []
     symbol_layers = []
@@ -264,31 +277,25 @@ if rend_idx > -1 and not simple_symbol:
     
     idx = 0
     for sl in symbol_layers:
-        print(sl[0]['type'])
+        #print(sl[0]['type'])
         symbol_def = checkSymbolType(sl)
         ret = parseSolidFill(symbol_def)    
-        if not symbol_def['template'] == 'hatch':
-            print("simple Fill")
-            #if 'template_stroke_num' in symbol_def and not ret == '':
-                #ret = parseStroke(symbol_def, ret)
-            #category = QgsRendererCategory(symbol_values[idx][0], ret, symbols_labels[idx])
-            #categories.append(category)
-        elif symbol_def['template'] == 'hatch':
-            print ("val :" + str(symbol_values[idx][0]))
-            line_ret = parseLineFill(symbol_def)        
-            if not line_ret == '':
-                for line in line_ret:
-                    ret.appendSymbolLayer(line)
+      
+        print ("val :" + str(symbol_values[idx][0]))
+        line_ret = parseLineFill(symbol_def)        
+        if not line_ret == '':
+            for line in line_ret:
+                ret.appendSymbolLayer(line)
         
         if 'template_stroke_num' in symbol_def and not ret == '':
             ret = parseStroke(symbol_def, ret)  
-        print(len(sl))
+       #print(len(sl))
         #if 'characterIndex' in sl[0] and sl[0]['type'] == 'CIMCharacterMarker':        
         layers = []
         max_size = 0
         for charSl in sl:            
             if 'characterIndex' in charSl and charSl['type'] == 'CIMCharacterMarker':
-                symbol = parseCharacterFill(charSl)
+                symbol = parseCharacterFill(charSl, max_size)
                 if not symbol == '':
                     layers.append(symbol)                   
                     max_size = max(symbol.size(), max_size)
@@ -311,7 +318,7 @@ if rend_idx > -1 and not simple_symbol:
 elif renderers[rend_idx]['type'] == 'CIMSimpleRenderer' and simple_symbol:
     single_symbology = parseSimpleRenderer(renderers[rend_idx])
     if not single_symbology == '':
-        print('uni')
+        #print('uni')
         symbol = QgsSymbol.defaultSymbol(layer.geometryType())
         symbol.changeSymbolLayer(0, single_symbology)
         renderer = QgsSingleSymbolRenderer(symbol)
