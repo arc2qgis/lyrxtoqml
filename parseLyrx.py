@@ -190,8 +190,11 @@ def parseCharacterFill(symb_def):
     symbol.setFontFamily(symb_def['fontFamilyName'])
     symbol.setCharacter(chr(symb_def['characterIndex']))
     symbol.setSize(symb_def['size']*point2mm)
+    #symbol.markerOffsetWithWidthAndHeight()
     if 'rotation' in symb_def:
         symbol.setAngle(symb_def['rotation'])
+        # Fix offset - rotation twaek
+        symbol.setOffset(QPointF(0.3,0.0))
     print(symb_def['characterIndex'])
     if 'symbol' in symb_def:
         if 'symbolLayers' in symb_def['symbol']:
@@ -279,15 +282,19 @@ if rend_idx > -1 and not simple_symbol:
         print(len(sl))
         #if 'characterIndex' in sl[0] and sl[0]['type'] == 'CIMCharacterMarker':        
         layers = []
+        max_size = 0
         for charSl in sl:            
             if 'characterIndex' in charSl and charSl['type'] == 'CIMCharacterMarker':
                 symbol = parseCharacterFill(charSl)
                 if not symbol == '':
                     layers.append(symbol)                   
-            
+                    max_size = max(symbol.size(), max_size)
         # Add the font fill in reverse order
+        x = 0
         for rl in reversed(layers):
             ret.appendSymbolLayer(rl)
+            #ret.symbolLayer(0).markerOffsetWithWidthAndHeight(ret, max_size, max_size)
+            x = x + 1
             
         category = QgsRendererCategory(symbol_values[idx][0], ret, symbols_labels[idx])
         categories.append(category)
