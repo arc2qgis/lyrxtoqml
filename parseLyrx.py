@@ -55,10 +55,12 @@ if not f == '':
 
     rend_idx = -1
     print(rend_to_check)
+    # Check in the active layers for matching classification fields  
     for z in rend_to_check:
         field_exist = layer.fields().indexFromName(renderers[z]['fields'][0])
         if field_exist > -1:
             rend_idx = z
+    # Check simple symbol        
     if rend_idx < 0:
         active_name = layer.sourceName()
         rend_idx = dataset_names.index(active_name)
