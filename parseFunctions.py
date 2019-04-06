@@ -84,6 +84,7 @@ def parseStroke(obj, symb):
             if  i == 0 and  geometry_general_type_str == 'point':
                 #print(geometry_general_type_str)
                 if not geometry_general_type_str == 'line':
+                    print("stroke not line change first")
                     symb.symbolLayer(0).setStrokeColor(new_color)
                     symb.symbolLayer(0).setStrokeWidth(stroke_width)                
                 else:
@@ -104,6 +105,7 @@ def parseStroke(obj, symb):
                 if not geometry_general_type_str == 'line':
                     symbol_layer.setPenJoinStyle(0)
                 symb.appendSymbolLayer(symbol_layer)            
+                print(symbol_layer.color())
             i = i + 1            
     
     return symb   
@@ -167,7 +169,13 @@ def cmyk2Rgb(cmyk_array):
     return [r, g, b]
 
 def colorToRgbArray(color_array, type):
-    new_color = QColor.fromRgb(color_array[0],color_array[1], color_array[2])        
+    opacity = 255
+    if len(color_array) > 2 and type == 'CIMRGBColor':
+        opacity = color_array[3]/100*255
+        new_color = QColor.fromRgb(color_array[0],color_array[1], color_array[2], opacity) 
+        print(opacity)
+    else:    
+        new_color = QColor.fromRgb(color_array[0],color_array[1], color_array[2])        
     if type == 'CIMHSVColor':
         new_color = QColor.fromHsvF(color_array[0]/360,color_array[1]/100, color_array[2]/100,1)
     elif type == 'CIMCMYKColor':
@@ -204,9 +212,6 @@ def parseCharacterFill(symb_def, max_size):
             new_angle = abs(new_angle)
         elif new_angle > 180:
             new_angle = 360 - new_angle
-        #new_angle = 360 - abs(symb_def['rotation']) if symb_def['rotation'] < 0 or symb_def['rotation'] > 180 else symb_def['rotation']
-        #print(new_angle)
-        #print(symb_def['rotation'])
         symbol.setAngle(new_angle)
         # Fix offset - rotation twaek
         #symbol.setOffset(QPointF(0.3,0.0))
@@ -215,19 +220,23 @@ def parseCharacterFill(symb_def, max_size):
         #if offset_tweak > 0:
         #    symbol.setOffset(QPointF(0,0))
     #print(symb_def['characterIndex'])
-    if 'symbol' in symb_def and geometry_general_type_str == 'point':
+    if 'symbol' in symb_def :
         if 'symbolLayers' in symb_def['symbol']:
             color = parseSymbolLayerSolidFill(symb_def['symbol']['symbolLayers'])
             print(color)
             symbol.setColor(color[0])
     if not geometry_general_type_str == 'point':
         symbol_base = QgsPointPatternFillSymbolLayer()
-        symb_wrap = QgsSymbol.defaultSymbol(layer.geometryType())
-        symb_wrap.appendSymbolLayer(symbol)
-        print(symb_wrap.symbolLayers())
-        print(symbol.layerType())
-        print(symbol_base.layerType())
-        symbol_base.setSubSymbol(symb_wrap)
+        if 'stepX' in symb_def['markerPlacement']:
+            symbol_base.setDistanceX(symb_def['markerPlacement']['stepX']*point2mm)
+            symbol_base.setDistanceY(symb_def['markerPlacement']['stepY']*point2mm)    
+        
+        
+        marker = QgsMarkerSymbol()
+        marker.changeSymbolLayer(0, symbol)
+        symbol_base.setSubSymbol(marker)
+        
+        
         return symbol_base
     else:    
         return symbol
