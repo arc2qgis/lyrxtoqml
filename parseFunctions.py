@@ -56,13 +56,14 @@ def parseSolidFill(obj):
     symbol = ""
     i = 0
     for ls in obj['desc']:
-        if ls['type'] == 'CIMSolidFill':
+        if ls['type'] == 'CIMSolidFill' and ls['enable']:
             temp_color = ls['color']['values']
             new_color = colorToRgbArray(temp_color, ls['color']['type'])            
             symbol = QgsSymbol.defaultSymbol(layer.geometryType())
             symbol.setColor(new_color)            
             i = i + 1
-
+    if i > 1:
+        print("Extra " + str(i) + " solid fills")
     # Add default shape fill.
     if symbol == '':
             symbol = QgsSymbol.defaultSymbol(layer.geometryType())
@@ -76,15 +77,15 @@ def parseStroke(obj, symb):
     i = 0
     for ls in obj['desc']:
         #print(ls)
-        if ls['type'] == 'CIMSolidStroke':
+        if ls['type'] == 'CIMSolidStroke' and ls['enable']:
             temp_color = ls['color']['values']
             new_color = colorToRgbArray(temp_color, ls['color']['type'])
             #stroke_width = ls['width'] if ls['width'] < 2 else ls['width']*point2mm             
             stroke_width = ls['width']*point2mm             
-            if  i == 0 and  geometry_general_type_str == 'point':
+            if  i == 0 :
                 #print(geometry_general_type_str)
                 if not geometry_general_type_str == 'line':
-                    print("stroke not line change first")
+                    print("stroke not line change the first SL")
                     symb.symbolLayer(0).setStrokeColor(new_color)
                     symb.symbolLayer(0).setStrokeWidth(stroke_width)                
                 else:
@@ -119,7 +120,7 @@ def parseLineFill(obj):
     first_width = 0
     prev_hatch = 0
     for ls in obj['desc']:        
-        if ls['type'] == 'CIMHatchFill':            
+        if ls['type'] == 'CIMHatchFill' and ls['enable']:            
             symb_def = ls['lineSymbol']['symbolLayers'][0]
             # New definitions
             angle = ls['rotation'] if 'rotation' in ls else 0            
@@ -173,7 +174,7 @@ def colorToRgbArray(color_array, type):
     if len(color_array) > 2 and type == 'CIMRGBColor':
         opacity = color_array[3]/100*255
         new_color = QColor.fromRgb(color_array[0],color_array[1], color_array[2], opacity) 
-        print(opacity)
+        #print(opacity)
     else:    
         new_color = QColor.fromRgb(color_array[0],color_array[1], color_array[2])        
     if type == 'CIMHSVColor':
@@ -185,12 +186,10 @@ def colorToRgbArray(color_array, type):
     return new_color
 
 def parseSimpleRenderer(obj):
-    #for a in obj:
-    #    print(a)
+    
     symbol = ''
     symb_def = obj['symbol']['symbol']['symbolLayers'][0]
-    #for ob in symb_def:
-        #print(ob)
+    
     if 'characterIndex' in symb_def and symb_def['type'] == 'CIMCharacterMarker':
         symbol = parseCharacterFill(symb_def, 0)
         
@@ -220,10 +219,11 @@ def parseCharacterFill(symb_def, max_size):
         #if offset_tweak > 0:
         #    symbol.setOffset(QPointF(0,0))
     #print(symb_def['characterIndex'])
+    # Check fill color 
     if 'symbol' in symb_def :
         if 'symbolLayers' in symb_def['symbol']:
             color = parseSymbolLayerSolidFill(symb_def['symbol']['symbolLayers'])
-            print(color)
+            #print(color)
             symbol.setColor(color[0])
     if not geometry_general_type_str == 'point':
         symbol_base = QgsPointPatternFillSymbolLayer()

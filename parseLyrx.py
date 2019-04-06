@@ -108,16 +108,17 @@ if not f == '':
             max_size = 0
             for charSl in sl:            
                 if 'characterIndex' in charSl and charSl['type'] == 'CIMCharacterMarker':
-                #if not geometry_general_type_str == 'line':
-                    symbol = parseCharacterFill(charSl, max_size)
-                    if not symbol == '':
-                        print(charSl['characterIndex'])
-                        layers.append(symbol)    
-                        if geometry_general_type_str == 'point':          
-                            max_size = max(symbol.size(), max_size)
+                    #print(charSl["enable"])
+                    if charSl["enable"]:
+                        symbol = parseCharacterFill(charSl, max_size)
+                        if not symbol == '':
+                            #print(charSl['characterIndex'])
+                            layers.append(symbol)    
+                            if geometry_general_type_str == 'point':          
+                                max_size = max(symbol.size(), max_size)
             # Add the font fill in reverse order
             x = 0
-            print(len(layers))
+            print(str(len(layers)) + " Character marker symbols")
             for rl in reversed(layers):
                 ret.appendSymbolLayer(rl)
                 #ret.symbolLayer(0).markerOffsetWithWidthAndHeight(ret, max_size, max_size)
