@@ -78,6 +78,7 @@ def parseStroke(obj, symb):
     for ls in obj['desc']:
         #print(ls)
         if ls['type'] == 'CIMSolidStroke' and ls['enable']:
+            parseStrokeEffects(ls)
             temp_color = ls['color']['values']
             new_color = colorToRgbArray(temp_color, ls['color']['type'])
             #stroke_width = ls['width'] if ls['width'] < 2 else ls['width']*point2mm             
@@ -106,10 +107,17 @@ def parseStroke(obj, symb):
                 if not geometry_general_type_str == 'line':
                     symbol_layer.setPenJoinStyle(0)
                 symb.appendSymbolLayer(symbol_layer)            
-                print(symbol_layer.color())
+                #print(symbol_layer.color())
             i = i + 1            
     
     return symb   
+    
+def parseStrokeEffects(obj):
+    if 'effects' in obj:
+        #print("effects")
+        if obj['effects'][0]['type'] == 'CIMGeometricEffectDashes' :
+           print("dash") 
+    return 1
 
 def parseLineFill(obj):
     isDoubleHatch = False
