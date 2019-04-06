@@ -17,6 +17,8 @@ layer = iface.activeLayer()
 geometry_type_str = QgsWkbTypes.displayString(int(layer.wkbType()))
 geometry_type = layer.wkbType()
 geometry_general_type_str = geometry_type_str.replace('Multi', '').lower()  
+geometry_general_type_str = geometry_general_type_str.replace('string', '')
+print(geometry_general_type_str)
 
 #path = "c:/xampp/htdocs/lyrxtoqml_d/lyrx samples/"    
 #j_data = read_lyrx(path + "plan2.lyrx")
@@ -49,7 +51,8 @@ if not f == '':
     rend_to_check = []
     x = 0
     for r in renderers_symb_type:
-        if geometry_general_type_str in r:
+        print(r)
+        if geometry_general_type_str in r:            
             rend_to_check.append(x)
         x = x + 1
 
@@ -57,6 +60,8 @@ if not f == '':
     print(rend_to_check)
     # Check in the active layers for matching classification fields  
     for z in rend_to_check:
+        print(renderers[z]['fields'][0])
+        #print(layer.fields())
         field_exist = layer.fields().indexFromName(renderers[z]['fields'][0])
         if field_exist > -1:
             rend_idx = z
@@ -86,27 +91,33 @@ if not f == '':
             #print(sl[0]['type'])
             symbol_def = checkSymbolType(sl)
             ret = parseSolidFill(symbol_def)    
-          
+            #print(ret)
             print ("val :" + str(symbol_values[idx][0]))
-            line_ret = parseLineFill(symbol_def)        
+            line_ret = parseLineFill(symbol_def)
+            #print(len(line_ret))
             if not line_ret == '':
+                print(len(line_ret))
                 for line in line_ret:
                     ret.appendSymbolLayer(line)
             
             if 'template_stroke_num' in symbol_def and not ret == '':
                 ret = parseStroke(symbol_def, ret)  
-           #print(len(sl))
+            #print(len(sl))
             #if 'characterIndex' in sl[0] and sl[0]['type'] == 'CIMCharacterMarker':        
             layers = []
             max_size = 0
             for charSl in sl:            
                 if 'characterIndex' in charSl and charSl['type'] == 'CIMCharacterMarker':
+                #if not geometry_general_type_str == 'line':
                     symbol = parseCharacterFill(charSl, max_size)
                     if not symbol == '':
-                        layers.append(symbol)                   
-                        max_size = max(symbol.size(), max_size)
+                        print(charSl['characterIndex'])
+                        layers.append(symbol)    
+                        if geometry_general_type_str == 'point':          
+                            max_size = max(symbol.size(), max_size)
             # Add the font fill in reverse order
             x = 0
+            print(len(layers))
             for rl in reversed(layers):
                 ret.appendSymbolLayer(rl)
                 #ret.symbolLayer(0).markerOffsetWithWidthAndHeight(ret, max_size, max_size)
@@ -133,6 +144,7 @@ if not f == '':
 
     # assign the created renderer to the layer
     if not renderer == '' :
+        print("re-render")
         iface.activeLayer().setRenderer(renderer)
         iface.activeLayer().triggerRepaint()
 

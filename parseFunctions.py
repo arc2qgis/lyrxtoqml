@@ -81,18 +81,28 @@ def parseStroke(obj, symb):
             new_color = colorToRgbArray(temp_color, ls['color']['type'])
             #stroke_width = ls['width'] if ls['width'] < 2 else ls['width']*point2mm             
             stroke_width = ls['width']*point2mm             
-            if  i == 0:
-                symb.symbolLayer(0).setStrokeColor(new_color)
-                symb.symbolLayer(0).setStrokeWidth(stroke_width)                
+            if  i == 0 and  geometry_general_type_str == 'point':
+                #print(geometry_general_type_str)
+                if not geometry_general_type_str == 'line':
+                    symb.symbolLayer(0).setStrokeColor(new_color)
+                    symb.symbolLayer(0).setStrokeWidth(stroke_width)                
+                else:
+                    symb.symbolLayer(0).setColor(new_color)
+                    symb.symbolLayer(0).setWidth(stroke_width)                
             else :
+                print("Another stroke layer")
                 # Add simple line symbol layer (stroke)
+                #if not geometry_general_type_str == 'line':
                 symbol_layer = QgsSimpleLineSymbolLayer()
+                #else:
+                    #symbol_layer = QgsMarkerLineSymbolLayer()
                 symbol_layer.setColor(new_color)
                 symbol_layer.setWidth(stroke_width)
                 # TODO: Check offset def (in poly etc)
                 symbol_layer.setOffset(stroke_width/2)
                 # TODO: Read join and shape
-                symbol_layer.setPenJoinStyle(0)
+                if not geometry_general_type_str == 'line':
+                    symbol_layer.setPenJoinStyle(0)
                 symb.appendSymbolLayer(symbol_layer)            
             i = i + 1            
     
@@ -181,6 +191,8 @@ def parseSimpleRenderer(obj):
 
 def parseCharacterFill(symb_def, max_size):
     symbol = QgsFontMarkerSymbolLayer()
+    
+        
     symbol.setFontFamily(symb_def['fontFamilyName'])
     symbol.setCharacter(chr(symb_def['characterIndex']))
     new_size = symb_def['size']*point2mm
@@ -203,10 +215,19 @@ def parseCharacterFill(symb_def, max_size):
         #if offset_tweak > 0:
         #    symbol.setOffset(QPointF(0,0))
     #print(symb_def['characterIndex'])
-    if 'symbol' in symb_def:
+    if 'symbol' in symb_def and geometry_general_type_str == 'point':
         if 'symbolLayers' in symb_def['symbol']:
             color = parseSymbolLayerSolidFill(symb_def['symbol']['symbolLayers'])
-            #print(color)
+            print(color)
             symbol.setColor(color[0])
-        
-    return symbol
+    if not geometry_general_type_str == 'point':
+        symbol_base = QgsPointPatternFillSymbolLayer()
+        symb_wrap = QgsSymbol.defaultSymbol(layer.geometryType())
+        symb_wrap.appendSymbolLayer(symbol)
+        print(symb_wrap.symbolLayers())
+        print(symbol.layerType())
+        print(symbol_base.layerType())
+        symbol_base.setSubSymbol(symb_wrap)
+        return symbol_base
+    else:    
+        return symbol
