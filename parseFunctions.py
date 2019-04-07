@@ -88,7 +88,7 @@ def parseStroke(obj, symb):
             new_color = colorToRgbArray(temp_color, ls['color']['type'])
             #stroke_width = ls['width'] if ls['width'] < 2 else ls['width']*point2mm             
             stroke_width = ls['width']*point2mm             
-            if  i == 0 and  dp == '':
+            if  i == 0 and  dp == '' and i > 9:
                 #print(geometry_general_type_str)
                 if not geometry_general_type_str == 'line':
                     print("stroke not line change the first SL")
