@@ -60,15 +60,19 @@ def parseSolidFill(obj):
             temp_color = ls['color']['values']
             new_color = colorToRgbArray(temp_color, ls['color']['type'])            
             symbol = QgsSymbol.defaultSymbol(layer.geometryType())
-            symbol.setColor(new_color)            
+            symbol.setColor(new_color)  
+            
+            #symbol.setStrokeColor(new_color)            
             i = i + 1
     if i > 1:
         print("Extra " + str(i) + " solid fills")
     # Add default shape fill.
-    if symbol == '':
+    if symbol == '' or  geometry_general_type_str == 'line':
             symbol = QgsSymbol.defaultSymbol(layer.geometryType())
             new_color = colorToRgbArray([255,255,255,0], 'CIMRGBColor')
+            
             symbol.setColor(new_color)
+            
 
     return symbol
 
@@ -78,12 +82,13 @@ def parseStroke(obj, symb):
     for ls in obj['desc']:
         #print(ls)
         if ls['type'] == 'CIMSolidStroke' and ls['enable']:
-            parseStrokeEffects(ls)
+            dp = parseStrokeEffects(ls)
+            #print(dp)
             temp_color = ls['color']['values']
             new_color = colorToRgbArray(temp_color, ls['color']['type'])
             #stroke_width = ls['width'] if ls['width'] < 2 else ls['width']*point2mm             
             stroke_width = ls['width']*point2mm             
-            if  i == 0 :
+            if  i == 0 and  dp == '':
                 #print(geometry_general_type_str)
                 if not geometry_general_type_str == 'line':
                     print("stroke not line change the first SL")
@@ -92,6 +97,11 @@ def parseStroke(obj, symb):
                 else:
                     symb.symbolLayer(0).setColor(new_color)
                     symb.symbolLayer(0).setWidth(stroke_width)                
+                if not dp == '':
+                    print("dash pattern in first layer")
+                    symb.symbolLayer(0).setUseCustomDashPattern(True)
+                    symb.symbolLayer(0).setCustomDashVector(dp)
+                        
             else :
                 print("Another stroke layer")
                 # Add simple line symbol layer (stroke)
@@ -102,22 +112,35 @@ def parseStroke(obj, symb):
                 symbol_layer.setColor(new_color)
                 symbol_layer.setWidth(stroke_width)
                 # TODO: Check offset def (in poly etc)
-                symbol_layer.setOffset(stroke_width/2)
+                if not geometry_general_type_str == 'line':
+                    symbol_layer.setOffset(stroke_width/2)
                 # TODO: Read join and shape
                 if not geometry_general_type_str == 'line':
                     symbol_layer.setPenJoinStyle(0)
-                symb.appendSymbolLayer(symbol_layer)            
+                if not dp == '':
+                    print("dp in " + str(i) + " stroke symbol")
+                    symbol_layer.setUseCustomDashPattern(True)
+                    symbol_layer.setCustomDashVector(dp)
+                    
+                symb.insertSymbolLayer(0, symbol_layer)            
                 #print(symbol_layer.color())
             i = i + 1            
     
     return symb   
     
 def parseStrokeEffects(obj):
+    dash_pattern = ''
+    temp_array = []
     if 'effects' in obj:
         #print("effects")
         if obj['effects'][0]['type'] == 'CIMGeometricEffectDashes' :
-           print("dash") 
-    return 1
+           #print("dash") 
+            temp_pattern = obj['effects'][0]['dashTemplate']
+            for tp in temp_pattern:
+                temp_array.append(tp*point2mm)
+            dash_pattern = temp_array   
+            #print(dash_pattern)
+    return dash_pattern
 
 def parseLineFill(obj):
     isDoubleHatch = False
