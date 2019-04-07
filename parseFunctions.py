@@ -18,6 +18,7 @@ def readValueDef(obj):
     
 def checkSymbolType(obj):    
     obj_arr = {}
+    sl_idx = 0
     for o in obj:       
         if not 'desc' in obj_arr  :
             obj_arr['desc'] = []
@@ -25,8 +26,10 @@ def checkSymbolType(obj):
         if  not type in obj_arr  :
             obj_arr[type] = 0
         obj_arr[type] = obj_arr[type] + 1
+        o['sl_idx'] = sl_idx
         obj_arr['desc'].append(o)
-    
+        sl_idx = sl_idx + 1
+    #print(sl_idx)
     if 'CIMHatchFill' in obj_arr:
         obj_arr['template'] = 'hatch'
         obj_arr['template_hatch_num'] = obj_arr['CIMHatchFill']        
@@ -55,14 +58,16 @@ def parseSymbolLayerSolidFill(layers):
 def parseSolidFill(obj):    
     symbol = ""
     i = 0
+    solid_index = -1
     for ls in obj['desc']:
         if ls['type'] == 'CIMSolidFill' and ls['enable']:
             temp_color = ls['color']['values']
             new_color = colorToRgbArray(temp_color, ls['color']['type'])            
             symbol = QgsSymbol.defaultSymbol(layer.geometryType())
             symbol.setColor(new_color)  
-            
-            #symbol.setStrokeColor(new_color)            
+            #print("solid index " + str(ls['sl_idx']))
+            #symbol.setStrokeColor(new_color)     
+            solid_index = ls['sl_idx']
             i = i + 1
     if i > 1:
         print("Extra " + str(i) + " solid fills")
@@ -70,11 +75,11 @@ def parseSolidFill(obj):
     if symbol == '' or  geometry_general_type_str == 'line':
             symbol = QgsSymbol.defaultSymbol(layer.geometryType())
             new_color = colorToRgbArray([255,255,255,0], 'CIMRGBColor')
-            
             symbol.setColor(new_color)
             
-
-    return symbol
+            
+    #symbol['order'] = 0
+    return [symbol, solid_index]
 
 def parseStroke(obj, symb):                
     layers = []
@@ -121,8 +126,9 @@ def parseStroke(obj, symb):
                     print("dp in " + str(i) + " stroke symbol")
                     symbol_layer.setUseCustomDashPattern(True)
                     symbol_layer.setCustomDashVector(dp)
-                    
-                symb.insertSymbolLayer(0, symbol_layer)            
+                print("stroke symbol idx is " + str(ls['sl_idx']))  
+                stroke_order = ls['sl_idx']
+                symb.insertSymbolLayer(stroke_order, symbol_layer)            
                 #print(symbol_layer.color())
             i = i + 1            
     

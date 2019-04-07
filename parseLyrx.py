@@ -86,21 +86,26 @@ if not f == '':
             symbols_labels.append(c['label'])
             symbol_values.append(c['values'][0]['fieldValues'])
         
+        #print(symbol_layers)
         idx = 0
         for sl in symbol_layers:
             #print(sl[0]['type'])
             symbol_def = checkSymbolType(sl)
-            ret = parseSolidFill(symbol_def)    
+            #print(symbol_def)
+            ret_arr = parseSolidFill(symbol_def)
+            ret = ret_arr[0]
+            print("solid fill idx " + str(ret_arr[1])) 
             #print(ret)
             print ("val :" + str(symbol_values[idx][0]))
             line_ret = parseLineFill(symbol_def)
             #print(len(line_ret))
             if not line_ret == '':
-                print(len(line_ret))
+                print("hatch number is " + str(len(line_ret)))
                 for line in line_ret:
                     ret.appendSymbolLayer(line)
             
             if 'template_stroke_num' in symbol_def and not ret == '':
+                
                 ret = parseStroke(symbol_def, ret)  
             #print(len(sl))
             #if 'characterIndex' in sl[0] and sl[0]['type'] == 'CIMCharacterMarker':        
@@ -112,13 +117,13 @@ if not f == '':
                     if charSl["enable"]:
                         symbol = parseCharacterFill(charSl, max_size)
                         if not symbol == '':
-                            #print(charSl['characterIndex'])
+                            print("char symb desc " + str(charSl['sl_idx']))
                             layers.append(symbol)    
                             if geometry_general_type_str == 'point':          
                                 max_size = max(symbol.size(), max_size)
             # Add the font fill in reverse order
             x = 0
-            print(str(len(layers)) + " Character marker symbols")
+            #print(str(len(layers)) + " Character marker symbols")
             for rl in reversed(layers):
                 ret.appendSymbolLayer(rl)
                 #ret.symbolLayer(0).markerOffsetWithWidthAndHeight(ret, max_size, max_size)
@@ -129,6 +134,7 @@ if not f == '':
             category = QgsRendererCategory(symbol_val_prep, ret, symbols_labels[idx])
             categories.append(category)
             idx = idx + 1
+            #print(idx)    
         
         concat_str =  ", " + "', ', " + class_field2 + ")" if not class_field2 == "" else ")"
         renderer = QgsCategorizedSymbolRenderer("concat(" + class_field + concat_str, categories)
