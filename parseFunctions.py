@@ -256,12 +256,19 @@ def parseCharacterFill(symb_def, max_size):
         #if offset_tweak > 0:
         #    symbol.setOffset(QPointF(0,0))
     #print(symb_def['characterIndex'])
-    # Check fill color 
+    # Check fill color     
     if 'symbol' in symb_def :
         if 'symbolLayers' in symb_def['symbol']:
             color = parseSymbolLayerSolidFill(symb_def['symbol']['symbolLayers'])
             #print(color)
             symbol.setColor(color[0])
+    # Chck offset        
+    offset_def = symb_def['anchorPoint'] if 'anchorPoint' in symb_def else ''
+    if 'x' in offset_def:
+        offsetX = offset_def['x']*point2mm
+        offsetY = offset_def['y']*point2mm 
+        symbol.setOffset(QPointF(offsetX,offsetY))
+        
     if not geometry_general_type_str == 'point':
         symbol_base = QgsPointPatternFillSymbolLayer()
         if 'stepX' in symb_def['markerPlacement']:
