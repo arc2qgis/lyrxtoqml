@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>readLyrxDialogBase</class>
+ <widget class="QDialog" name="readLyrxDialogBase">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>400</width>
+    <height>301</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>readLyrx</string>
+  </property>
+  <widget class="QDialogButtonBox" name="button_box">
+   <property name="geometry">
+    <rect>
+     <x>30</x>
+     <y>240</y>
+     <width>341</width>
+     <height>32</height>
+    </rect>
+   </property>
+   <property name="orientation">
+    <enum>Qt::Horizontal</enum>
+   </property>
+   <property name="standardButtons">
+    <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+   </property>
+  </widget>
+  <widget class="QgsFileWidget" name="file_select">
+   <property name="geometry">
+    <rect>
+     <x>120</x>
+     <y>120</y>
+     <width>191</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="dialogTitle">
+    <string>Choose a lyrx file for symbology to load</string>
+   </property>
+   <property name="filter">
+    <string>Arcgis Pro Layer (*.lyrx) ;; </string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="file_label">
+   <property name="geometry">
+    <rect>
+     <x>28</x>
+     <y>120</y>
+     <width>81</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>.lyrx file: </string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="layer_label">
+   <property name="geometry">
+    <rect>
+     <x>32</x>
+     <y>70</y>
+     <width>112</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Layer to apply style to:</string>
+   </property>
+  </widget>
+  <widget class="QgsMapLayerComboBox" name="layer_select">
+   <property name="geometry">
+    <rect>
+     <x>150</x>
+     <y>70</y>
+     <width>161</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="excludedProviders">
+    <stringlist>
+     <string>wms</string>
+     <string>wmts</string>
+    </stringlist>
+   </property>
+  </widget>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>QgsFileWidget</class>
+   <extends>QWidget</extends>
+   <header>qgsfilewidget.h</header>
+  </customwidget>
+  <customwidget>
+   <class>QgsMapLayerComboBox</class>
+   <extends>QComboBox</extends>
+   <header>qgsmaplayercombobox.h</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>button_box</sender>
+   <signal>accepted()</signal>
+   <receiver>readLyrxDialogBase</receiver>
+   <slot>accept()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>button_box</sender>
+   <signal>rejected()</signal>
+   <receiver>readLyrxDialogBase</receiver>
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>
