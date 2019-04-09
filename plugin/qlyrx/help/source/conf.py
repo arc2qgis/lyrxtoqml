@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# readLyrx documentation build configuration file, created by
+# qlyrx documentation build configuration file, created by
 # sphinx-quickstart on Sun Feb 12 17:11:03 2012.
 #
 # This file is execfile()d with the current directory set to its containing dir.
@@ -40,7 +40,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'readLyrx'
+project = u'qlyrx'
 copyright = u'2013, arc2qgis'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -178,7 +178,7 @@ htmlhelp_basename = 'TemplateClassdoc'
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'readLyrx.tex', u'readLyrx Documentation',
+  ('index', 'qlyrx.tex', u'qlyrx Documentation',
    u'arc2qgis', 'manual'),
 ]
 
@@ -211,6 +211,6 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'TemplateClass', u'readLyrx Documentation',
+    ('index', 'TemplateClass', u'qlyrx Documentation',
      [u'arc2qgis'], 1)
 ]

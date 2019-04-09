@@ -14,7 +14,7 @@ version=0.1
 author=arc2qgis
 email=dror.bogin@gmail.com
 
-about=Apply Arcgis Pro style (stored in .lyrx files) to qgis vector layers
+about=Apply Arcgis Pro .lyrx style to vector layers in QGIS
 
 tracker=https://github.com/arc2qgis/lyrxtoqml/issues
 repository=https://github.com/arc2qgis/lyrxtoqml

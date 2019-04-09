@@ -1,7 +1,7 @@
 Plugin Builder Results
 
-Your plugin readLyrx was created in:
-    C:/Projects/lyrxtoqml/plugin_builder_skeleton\readlyrx
+Your plugin qlyrx was created in:
+    C:/Projects\qlyrx
 
 Your QGIS plugin directory is located at:
     C:/Users/drorb/AppData/Roaming/QGIS/QGIS3/profiles/default/python/plugins
@@ -17,11 +17,11 @@ What's Next:
 
   * Test the plugin by enabling it in the QGIS plugin manager
 
-  * Customize it by editing the implementation file: ``readLyrx.py``
+  * Customize it by editing the implementation file: ``qlyrx.py``
 
   * Create your own custom icon, replacing the default icon.png
 
-  * Modify your user interface by opening readLyrx_dialog_base.ui in Qt Designer
+  * Modify your user interface by opening qlyrx_dialog_base.ui in Qt Designer
 
   * You can use the Makefile to compile your Ui and resource files when
     you make changes. This requires GNU make (gmake)

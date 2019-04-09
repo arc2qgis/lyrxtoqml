@@ -18,7 +18,7 @@ from PyQt5.QtGui import QIcon
 
 
 
-class readLyrxDialogTest(unittest.TestCase):
+class qlyrxDialogTest(unittest.TestCase):
     """Test rerources work."""
 
     def setUp(self):
@@ -31,12 +31,12 @@ class readLyrxDialogTest(unittest.TestCase):
 
     def test_icon_png(self):
         """Test we can click OK."""
-        path = ':/plugins/readLyrx/icon.png'
+        path = ':/plugins/qlyrx/icon.png'
         icon = QIcon(path)
         self.assertFalse(icon.isNull())
 
 if __name__ == "__main__":
-    suite = unittest.makeSuite(readLyrxResourcesTest)
+    suite = unittest.makeSuite(qlyrxResourcesTest)
     runner = unittest.TextTestRunner(verbosity=2)
     runner.run(suite)
 

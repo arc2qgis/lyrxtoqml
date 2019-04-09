@@ -1,7 +1,7 @@
 #/***************************************************************************
-# readLyrx
+# qlyrx
 #
-# Apply arcgis pro .lyrx style
+# Apply Arcgis Pro .lyrx style
 #							 -------------------
 #		begin				: 2019-04-09
 #		git sha				: $Format:%H$
@@ -38,15 +38,15 @@ LOCALES =
 # translation
 SOURCES = \
 	__init__.py \
-	readLyrx.py readLyrx_dialog.py
+	qlyrx.py qlyrx_dialog.py
 
-PLUGINNAME = readLyrx
+PLUGINNAME = qlyrx
 
 PY_FILES = \
 	__init__.py \
-	readLyrx.py readLyrx_dialog.py
+	qlyrx.py qlyrx_dialog.py
 
-UI_FILES = readLyrx_dialog_base.ui
+UI_FILES = qlyrx_dialog_base.ui
 
 EXTRAS = metadata.txt icon.png
 

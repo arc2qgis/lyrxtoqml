@@ -16,18 +16,18 @@ import unittest
 
 from PyQt5.QtGui import QDialogButtonBox, QDialog
 
-from readLyrx_dialog import readLyrxDialog
+from qlyrx_dialog import qlyrxDialog
 
 from utilities import get_qgis_app
 QGIS_APP = get_qgis_app()
 
 
-class readLyrxDialogTest(unittest.TestCase):
+class qlyrxDialogTest(unittest.TestCase):
     """Test dialog works."""
 
     def setUp(self):
         """Runs before each test."""
-        self.dialog = readLyrxDialog(None)
+        self.dialog = qlyrxDialog(None)
 
     def tearDown(self):
         """Runs after each test."""
@@ -49,7 +49,7 @@ class readLyrxDialogTest(unittest.TestCase):
         self.assertEqual(result, QDialog.Rejected)
 
 if __name__ == "__main__":
-    suite = unittest.makeSuite(readLyrxDialogTest)
+    suite = unittest.makeSuite(qlyrxDialogTest)
     runner = unittest.TextTestRunner(verbosity=2)
     runner.run(suite)
 
