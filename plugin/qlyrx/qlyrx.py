@@ -425,8 +425,8 @@ class qlyrx:
         return symbol
 
 
-    def parseCharacterFill(symb_def, max_size):
-        symbol = self.QgsFontMarkerSymbolLayer()
+    def parseCharacterFill(self, symb_def, max_size, layer):
+        symbol = QgsFontMarkerSymbolLayer()
         
         symbol.setFontFamily(symb_def['fontFamilyName'])
         symbol.setCharacter(chr(symb_def['characterIndex']))
@@ -566,9 +566,9 @@ class qlyrx:
                     if 'characterIndex' in charSl and charSl['type'] == 'CIMCharacterMarker':
                         #print(charSl["enable"])
                         if charSl["enable"]:
-                            symbol = self.parseCharacterFill(charSl, max_size)
+                            symbol = self.parseCharacterFill(charSl, max_size, layer)
                             if not symbol == '':
-                                print("char symb desc " + str(charSl['sl_idx']))
+                                #print("char symb desc " + str(charSl['sl_idx']))
                                 layers.append(symbol)    
                                 if self.generalise_geom_type(layer) == 'point':          
                                     max_size = max(symbol.size(), max_size)
