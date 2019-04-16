@@ -74,6 +74,7 @@ if not f == '':
 
     if rend_idx > -1 and not simple_symbol:
         categories = []
+        allSymbolLayers = {}
         class_field = renderers[rend_idx]['fields'][0] if len(renderers[rend_idx]['fields']) > 0 else 'CODE'
         class_field2 = renderers[rend_idx]['fields'][1] if len(renderers[rend_idx]['fields']) > 1 else ''
         #print(class_field)
@@ -89,36 +90,48 @@ if not f == '':
         #print(symbol_layers)
         idx = 0
         for sl in symbol_layers:
+            allSymbolLayers = {}
             #print(sl[0]['type'])
             symbol_def = checkSymbolType(sl)
             #print(symbol_def)
-            ret_arr = parseSolidFill(symbol_def)
+            ret_arr = parseSolidFill(symbol_def)            
             ret = ret_arr[0]
-            print("solid fill idx " + str(ret_arr[1])) 
+            #print("solid fill idx " + str(ret_arr[1])) 
+            allSymbolLayers[ret_arr[1]] = ret
             #print(ret)
             print ("val :" + str(symbol_values[idx][0]))
-            line_ret = parseLineFill(symbol_def)
+            lines_ret = parseLineFill(symbol_def)            
             #print(len(line_ret))
-            if not line_ret == '':
+            if not lines_ret == '':
+                line_ret = lines_ret[0]
                 print("hatch number is " + str(len(line_ret)))
                 for line in line_ret:
                     ret.appendSymbolLayer(line)
-            
-            if 'template_stroke_num' in symbol_def and not ret == '':
+                for line_sym in lines_ret[1]:
+                    allSymbolLayers[line_sym] = lines_ret[1][line_sym]
+                    
+            # Create line strokes symbols
+            if 'template_stroke_num' in symbol_def and not ret == '':                
+                ret_val = parseStroke(symbol_def, ret)  
+                ret = ret_val[0]
+                stroke_symbols = ret_val[1] 
+                for str_s in stroke_symbols:
+                    #print(str_s)
+                    allSymbolLayers[str_s] = stroke_symbols[str_s]
                 
-                ret = parseStroke(symbol_def, ret)  
-            #print(len(sl))
-            #if 'characterIndex' in sl[0] and sl[0]['type'] == 'CIMCharacterMarker':        
+            # Create character fills
             layers = []
             max_size = 0
             for charSl in sl:            
                 if 'characterIndex' in charSl and charSl['type'] == 'CIMCharacterMarker':
                     #print(charSl["enable"])
                     if charSl["enable"]:
-                        symbol = parseCharacterFill(charSl, max_size)
+                        ret_sym = parseCharacterFill(charSl, max_size)
+                        symbol = ret_sym[0]                        
                         if not symbol == '':
                             print("char symb desc " + str(charSl['sl_idx']))
-                            layers.append(symbol)    
+                            layers.append(symbol)
+                            allSymbolLayers[ret_sym[1]] = symbol
                             if geometry_general_type_str == 'point':          
                                 max_size = max(symbol.size(), max_size)
             # Add the font fill in reverse order
@@ -126,18 +139,30 @@ if not f == '':
             #print(str(len(layers)) + " Character marker symbols")
             for rl in reversed(layers):
                 ret.appendSymbolLayer(rl)
+                #allSymbolLayers[idx] = rl
+                #print(idx)
                 #ret.symbolLayer(0).markerOffsetWithWidthAndHeight(ret, max_size, max_size)
                 x = x + 1
-
+            
+            print("symbol layers in object " + str(len(allSymbolLayers)))
+            print("ret symbols " + str(ret.symbolLayerCount()))
+            
+            ordered_ret = ''
+            for ord_sym in allSymbolLayers:
+                print(str(ord_sym) + " type " + str(allSymbolLayers[ord_sym].type()))
+            
             symbol_val_prep = symbol_values[idx][0] + ", " + symbol_values[idx][1] if len(symbol_values[idx]) > 1 else symbol_values[idx][0]
             #category = QgsRendererCategory(symbol_values[idx][0], ret, symbols_labels[idx])
             category = QgsRendererCategory(symbol_val_prep, ret, symbols_labels[idx])
             categories.append(category)
             idx = idx + 1
             #print(idx)    
+            
+            
         
         concat_str =  ", " + "', ', " + class_field2 + ")" if not class_field2 == "" else ")"
         renderer = QgsCategorizedSymbolRenderer("concat(" + class_field + concat_str, categories)
+        print(allSymbolLayers)
         
     elif renderers[rend_idx]['type'] == 'CIMSimpleRenderer' and simple_symbol:
         single_symbology = parseSimpleRenderer(renderers[rend_idx])

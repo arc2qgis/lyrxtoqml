@@ -84,6 +84,7 @@ def parseSolidFill(obj):
 def parseStroke(obj, symb):                
     layers = []
     i = 0
+    layers_obj = {}
     for ls in obj['desc']:
         #print(ls)
         if ls['type'] == 'CIMSolidStroke' and ls['enable']:
@@ -132,11 +133,12 @@ def parseStroke(obj, symb):
                 #symb.insertSymbolLayer(stroke_order, symbol_layer)            
                 symb.appendSymbolLayer(symbol_layer)            
                 #print(symbol_layer.color())
+                layers_obj[stroke_order] = symbol_layer
             i = i + 1            
     
-    return symb   
+    return [symb, layers_obj]
     
-def parseStrokeEffects(obj):
+def parseStrokeEffects(obj):    
     dash_pattern = ''
     temp_array = []
     if 'effects' in obj:
@@ -150,16 +152,18 @@ def parseStrokeEffects(obj):
             #print(dash_pattern)
     return dash_pattern
 
-def parseLineFill(obj):
+def parseLineFill(obj):    
     isDoubleHatch = False
     isOffsetEqFirstWidth = True 
     symbol = ""
     layers = []
+    layers_obj = {}
     i = 0
     first_width = 0
     prev_hatch = 0
     for ls in obj['desc']:        
         if ls['type'] == 'CIMHatchFill' and ls['enable']:            
+            print(ls['sl_idx'])
             symb_def = ls['lineSymbol']['symbolLayers'][0]
             # New definitions
             angle = ls['rotation'] if 'rotation' in ls else 0            
@@ -187,12 +191,13 @@ def parseLineFill(obj):
                 isDoubleHatch = True
 
             layers.append(symbol_layer)
+            layers_obj[ls['sl_idx']] = symbol_layer
             if i == 0:
                 prev_hatch = fill_width
             i = i + 1
                 
     if len(layers) > 0:
-        return layers
+        return [layers, layers_obj]
     else:
         return symbol
     
@@ -236,9 +241,9 @@ def parseSimpleRenderer(obj):
     return symbol
 
 def parseCharacterFill(symb_def, max_size):
-    symbol = QgsFontMarkerSymbolLayer()
-    
-        
+    #print(symb_def['sl_idx'])
+    ret_val = ''
+    symbol = QgsFontMarkerSymbolLayer()            
     symbol.setFontFamily(symb_def['fontFamilyName'])
     symbol.setCharacter(chr(symb_def['characterIndex']))
     new_size = symb_def['size']*point2mm
@@ -283,6 +288,10 @@ def parseCharacterFill(symb_def, max_size):
         symbol_base.setSubSymbol(marker)
         
         
-        return symbol_base
+        ret_val = symbol_base
     else:    
-        return symbol
+        ret_val = symbol
+    
+    return [ret_val, symb_def['sl_idx']]
+
+    
