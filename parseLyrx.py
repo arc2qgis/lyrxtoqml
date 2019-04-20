@@ -190,9 +190,6 @@ if not f == '':
                 ordered_obj[total_len] = ordered_obj[-1].clone()
                 del(ordered_obj[-1])
                 
-#            for checkL in ordered_obj:
-#                if 'SymbolLayer' in ordered_obj[checkL].__class__.__name__:    
-#                    print("check locked alternate array " + str( ordered_obj[checkL].isLocked()))
             ## Create the new symbol from reveresed ordered_obj
             new_symbol = QgsSymbol.defaultSymbol(layer.geometryType())
             baseLayer = False
@@ -200,38 +197,23 @@ if not f == '':
                 if total_len > 1:
                     for ord_sym_idx in reversed(ordered_obj):
                         #print("in reorder loop " + str(ord_sym_idx))
-                        if not baseLayer:
-                            #print("ordered type is " + str(ordered_obj[ord_sym_idx].type()))
-                            #lastType = ordered_obj[ord_sym_idx].type()
-                            baseSymbolLayer  = ordered_obj[ord_sym_idx].clone()
-                            #print(baseSymbolLayer.__class__.__name__)
-                            locked = ''
-                            if not 'SymbolLayer' in baseSymbolLayer.__class__.__name__:
-                                print("try symbolLayer")
-                                baseSymbolLayer = ordered_obj[ord_sym_idx].symbolLayer(0).clone()
-                                locked = ordered_obj[ord_sym_idx].symbolLayer(0).isLocked()
-                                #baseSymbolLayer.setLocked(ordered_obj[ord_sym_idx].symbolLayer(0).isLocked())
-                            else:
-                                locked = ordered_obj[ord_sym_idx].isLocked()
-                            #print("locked " + str(ordered_obj[ord_sym_idx].isLocked()))
-                            if "SymbolLayer" in baseSymbolLayer.__class__.__name__:
-                                baseSymbolLayer.setLocked(locked)
-                                new_symbol.changeSymbolLayer(0, baseSymbolLayer)
-                            baseLayer = True
+                        newSymbolLayer  = ordered_obj[ord_sym_idx].clone()
+                        locked = ''
+                        if not 'SymbolLayer' in newSymbolLayer.__class__.__name__:
+                            print("try symbolLayer")
+                            newSymbolLayer = ordered_obj[ord_sym_idx].symbolLayer(0).clone()
+                            locked = ordered_obj[ord_sym_idx].symbolLayer(0).isLocked()                                
                         else:
-                            newSymbolLayer  = ordered_obj[ord_sym_idx].clone()
-                            locked = ''
-                            if not "SymbolLayer" in newSymbolLayer.__class__.__name__:                                
-                                newSymbolLayer = ordered_obj[ord_sym_idx].symbolLayer(0).clone()
-                                locked = ordered_obj[ord_sym_idx].symbolLayer(0).isLocked()
-                            else:
-                                locked = ordered_obj[ord_sym_idx].isLocked()
-
-                            #print(newSymbolLayer.__class__.__name__)
-                            if "SymbolLayer" in newSymbolLayer.__class__.__name__:
-                                newSymbolLayer.setLocked(locked)
-                                new_symbol.appendSymbolLayer(newSymbolLayer)
-                                #print("locked " + str(ordered_obj[ord_sym_idx].isLocked()))                        
+                            locked = ordered_obj[ord_sym_idx].isLocked()
+                        print("locked " + str(locked))    
+                        newSymbolLayer.setLocked(locked)    
+                        if not baseLayer:                                                        
+                            if "SymbolLayer" in newSymbolLayer.__class__.__name__:                                
+                                new_symbol.changeSymbolLayer(0, newSymbolLayer)
+                            baseLayer = True
+                        else:                                                        
+                            if "SymbolLayer" in newSymbolLayer.__class__.__name__:                                
+                                new_symbol.appendSymbolLayer(newSymbolLayer)                                
                 else:
                     print("one layered symbol")
                     new_symbol = ret

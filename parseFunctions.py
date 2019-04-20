@@ -80,6 +80,7 @@ def parseSolidFill(obj):
             new_color = colorToRgbArray(temp_color, ls['color']['type'])            
             symbol = QgsSymbol.defaultSymbol(layer.geometryType())
             symbol.setColor(new_color)  
+            ### TODO add lock
             #print("solid index " + str(ls['sl_idx']))
             #symbol.setStrokeColor(new_color)     
             solid_index = ls['sl_idx']
@@ -187,7 +188,7 @@ def parseStroke(obj, symb):
                     #print("dp in " + str(i) + " stroke symbol")
                     symbol_layer.setUseCustomDashPattern(True)
                     symbol_layer.setCustomDashVector(dp)
-                    
+                symbol_layer = changeColorLock(symbol_layer, ls)    
                 #print("stroke symbol idx is " + str(ls['sl_idx']))  
                 stroke_order = ls['sl_idx']                
                 symb.appendSymbolLayer(symbol_layer)                            
@@ -239,7 +240,8 @@ def parseLineFill(obj):
             symbol_layer.setColor(new_color)
             symbol_layer.setLineAngle(angle)
             symbol_layer.setLineWidth(fill_width)
-            symbol_layer.setDistance(fill_distance)            
+            symbol_layer.setDistance(fill_distance)     
+            symbol_layer = changeColorLock(symbol_layer, ls)
             # Tweak save the first hatch width and use as offset
             # TODO: Real fix, mark problematic files and unusual offsets
             if prev_hatch > 0 :
@@ -258,7 +260,14 @@ def parseLineFill(obj):
         return [layers, layers_obj]
     else:
         return symbol
-    
+
+def changeColorLock(sl, symbol_def):
+    color_lock = symbol_def['colorLocked'] if 'colorLocked' in symbol_def else ''    
+    if not color_lock == '':
+        #print("locked")
+        sl.setLocked(True)
+    return sl
+
 def cmyk2Rgb(cmyk_array):
     c = cmyk_array[0]
     m  = cmyk_array[1]
@@ -294,8 +303,7 @@ def parseSimpleRenderer(obj):
     
     if 'characterIndex' in symb_def and symb_def['type'] == 'CIMCharacterMarker':
         symbol = parseCharacterFill(symb_def, 0)
-        
-                
+                        
     return symbol
 
 def parseCharacterFill(symb_def, max_size):
@@ -335,44 +343,35 @@ def parseCharacterFill(symb_def, max_size):
             color = parseSymbolLayerSolidFill(symb_def['symbol']['symbolLayers'])
             #print(color)
             symbol.setColor(color[0])
-    # Chck offset        
+    ## Check offset        
     offset_def = symb_def['anchorPoint'] if 'anchorPoint' in symb_def else ''
     if 'x' in offset_def:
         offsetX = offset_def['x']*point2mm
         offsetY = offset_def['y']*point2mm 
         symbol.setOffset(QPointF(offsetX,offsetY))
         
+    ### TODO Fix offset after rotation
     #print(symbol.markerOffsetWithWidthAndHeight(symbol, 8, 8))
-    #print(symbol.markerOffset())
-    #print(symbol.markerOffset2(
-        
         
     if not geometry_general_type_str == 'point':
         symbol_base = QgsPointPatternFillSymbolLayer()
+        ## Change to line symbol when diplacement is along line
         if 'type' in symb_def['markerPlacement']:
             if symb_def['markerPlacement']['type'] == 'CIMMarkerPlacementAlongLineSameSize':
                 symbol_base = QgsMarkerLineSymbolLayer()
-        print("Special fill " + geometry_general_type_str)
-        #print("special fill num is " + symbol)
+        #print("Special fill " + geometry_general_type_str)        
+        ## Fill pattern
         if 'stepX' in symb_def['markerPlacement']:
             symbol_base.setDistanceX(symb_def['markerPlacement']['stepX']*point2mm)
             symbol_base.setDistanceY(symb_def['markerPlacement']['stepY']*point2mm)    
-        
-        
+                
         marker = QgsMarkerSymbol()
         marker.changeSymbolLayer(0, symbol)
-        symbol_base.setSubSymbol(marker)
-        
-        
+        symbol_base.setSubSymbol(marker)                
         ret_val = symbol_base
     else:    
         ret_val = symbol
-    
-    color_lock = symb_def['colorLocked'] if 'colorLocked' in symb_def else ''
-    
-    if not color_lock == '':
-        print("locked")
-        ret_val.setLocked(True)   
+    ret_val = changeColorLock(ret_val, symb_def)
     
     #join = parseLineJoin(symb_def)
     #ret_val.setPenJoinStyle(join)
