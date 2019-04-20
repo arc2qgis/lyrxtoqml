@@ -98,25 +98,19 @@ if not f == '':
         for sl in symbol_layers:
             print ("val :" + str(symbol_values[idx][0]))
             allSymbolLayers = {}                        
-            #print(sl[0]['type'])
-            noSolid = False
+            #print(sl[0]['type'])            
             symbol_def = checkSymbolType(sl)
-            print("Layer num is " + str(symbol_def['layer_count']))
             layer_num = symbol_def['layer_count']
+            print("Symology count is " + str(layer_num))            
             ret_arr = parseSolidFill(symbol_def)            
             ret = ret_arr[0]
-                        
             #print("solid fill idx " + str(ret_arr[1])) 
-            allSymbolLayers[ret_arr[1]] = ret
-            print(ret.type())
-            isBaseSymbol = False
-            if ret.type() == 1:
-                print(ret.symbolLayer(0))
-                isBaseSymbol = True
+            allSymbolLayers[ret_arr[1]] = ret                        
+            noSolid = False
             if ret_arr[1] < 0:
-                noSolid = True            
-            #print(ret)
+                noSolid = True                        
             
+            ## Create hatch fill 
             lines_ret = parseLineFill(symbol_def)            
             #print(len(line_ret))
             if not lines_ret == '':
@@ -126,9 +120,8 @@ if not f == '':
                     ret.appendSymbolLayer(line)
                 for line_sym in lines_ret[1]:
                     allSymbolLayers[line_sym] = lines_ret[1][line_sym]                    
-            
-                    
-            # Create line strokes symbols
+
+            ## Create line strokes symbols
             if 'template_stroke_num' in symbol_def and not ret == '':                
                 ret_val = parseStroke(symbol_def, ret)  
                 ret = ret_val[0]
@@ -136,9 +129,8 @@ if not f == '':
                 for str_s in stroke_symbols:
                     #print(str_s)
                     allSymbolLayers[str_s] = stroke_symbols[str_s]                    
-                    
-            
-            # Create character fills
+
+            ## Create character fills
             layers = []
             max_size = 0            
             for charSl in sl:            
@@ -152,27 +144,20 @@ if not f == '':
                             layers.append(symbol)                            
                             allSymbolLayers[ret_sym[1]] = symbol
                             if geometry_general_type_str == 'point':          
-                                max_size = max(symbol.size(), max_size)
-            #print("b4 halo" + str(len(layers)))
+                                max_size = max(symbol.size(), max_size)            
             
             if not halo_symbols[idx] == '':
                 layers = tweakHaloSymbol(layers, halo_symbols[idx])
-                allSymbolLayers[len(allSymbolLayers) + 1] = layers[len(layers) - 1].clone()
-            #allSymbolLayers[]
-            #print("after halo " + str(len(layers)))
-            # Add the font fill in reverse order
-            x = 0                            
-            #for rl in reversed(layers): 
-            ## used to reverese b4 stroke change
-            #print(layers)
+                allSymbolLayers[len(allSymbolLayers) + 1] = layers[len(layers) - 1].clone()            
+            
+            ## Add the font fill 
+            x = 0                                        
             for rl in layers:                
                 ret.appendSymbolLayer(rl)                
                 x = x + 1
             
-            # Delete default base layer if point and marker filled            
-            #print("ret symbols b4 delete " + str(ret.symbolLayerCount()))
-            #print("is Halo " + str(halo_symbols[idx] == ''))
-            #if len(layers) > 0 and geometry_general_type_str == "point":           
+            ## Delete default base layer if font marker filled or symbol mismatch
+            #print("is Halo " + str(halo_symbols[idx] == ''))            
             if ((len(layers) > 0 and noSolid ) or (layer_num < ret.symbolLayerCount()) ):                                
                 print("delete first symbol layer")
                 ret.deleteSymbolLayer(0)
@@ -182,19 +167,22 @@ if not f == '':
             
             #print("symbol layers in object " + str(len(allSymbolLayers)))
             #print("ret symbols " + str(ret.symbolLayerCount()))
+            
             ## Create ordered object from allSymbolLayers
             ordered_obj = OrderedDict(sorted(allSymbolLayers.items(), key=lambda t: t[0]))
             print("len " + str(len(allSymbolLayers)))
             total_len = ret.symbolLayerCount()
+            total_sym_len = len(ordered_obj)
             if -1 in ordered_obj  and not total_len in ordered_obj:
                 ordered_obj[total_len] = ordered_obj[-1].clone()
                 del(ordered_obj[-1])
+                
                 
             ## Create the new symbol from reveresed ordered_obj
             new_symbol = QgsSymbol.defaultSymbol(layer.geometryType())
             baseLayer = False
             try:
-                if total_len > 1:
+                if total_sym_len > 1:
                     for ord_sym_idx in reversed(ordered_obj):
                         #print("in reorder loop " + str(ord_sym_idx))
                         newSymbolLayer  = ordered_obj[ord_sym_idx].clone()
@@ -205,7 +193,7 @@ if not f == '':
                             locked = ordered_obj[ord_sym_idx].symbolLayer(0).isLocked()                                
                         else:
                             locked = ordered_obj[ord_sym_idx].isLocked()
-                        print("locked " + str(locked))    
+                        #print("locked " + str(locked))    
                         newSymbolLayer.setLocked(locked)    
                         if not baseLayer:                                                        
                             if "SymbolLayer" in newSymbolLayer.__class__.__name__:                                
@@ -222,18 +210,14 @@ if not f == '':
                     
             print("new symbol count"  + str(new_symbol.symbolLayerCount()))
 
-                                    
+            ## Create new category                            
             symbol_val_prep = symbol_values[idx][0] + ", " + symbol_values[idx][1] if len(symbol_values[idx]) > 1 else symbol_values[idx][0]
-            #print(symbol_val_prep)
-            #category = QgsRendererCategory(symbol_values[idx][0], ret, symbols_labels[idx])
-            category = QgsRendererCategory(symbol_val_prep, new_symbol, symbols_labels[idx])
-            
+            #print(symbol_val_prep)                        
+            category = QgsRendererCategory(symbol_val_prep, new_symbol, symbols_labels[idx])            
             categories.append(category)
             idx = idx + 1
             #print(idx)    
-            
-            
-        
+        ## Create renderer                        
         concat_str =  ", " + "', ', " + class_field2 + ")" if not class_field2 == "" else ")"
         renderer = QgsCategorizedSymbolRenderer("concat(" + class_field + concat_str, categories)
         #print(categories)
@@ -241,7 +225,7 @@ if not f == '':
     elif renderers[rend_idx]['type'] == 'CIMSimpleRenderer' and simple_symbol:
         single_symbology = parseSimpleRenderer(renderers[rend_idx])
         if not single_symbology == '':
-            #print('uni')
+            #print('simple renderer')
             symbol = QgsSymbol.defaultSymbol(layer.geometryType())
             symbol.changeSymbolLayer(0, single_symbology)
             renderer = QgsSingleSymbolRenderer(symbol)

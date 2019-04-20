@@ -136,7 +136,8 @@ def parseStroke(obj, symb):
             temp_color = ls['color']['values']
             new_color = colorToRgbArray(temp_color, ls['color']['type'])            
             stroke_width = ls['width']*point2mm                         
-            
+            cap = parseLineCap(ls)                                
+            join = parseLineJoin(ls)
             if  i == 0 and  dp == '' :
                 #Change the first symbol layer stroke by layer type
                 if not geometry_general_type_str == 'line':                    
@@ -151,12 +152,10 @@ def parseStroke(obj, symb):
                 cleanStrokeSymbol.setColor(new_color)
                 cleanStrokeSymbol.setWidth(stroke_width)
                 firstWidth = stroke_width
-                firstColor = cleanStrokeSymbol.color()
-                cap = parseLineCap(ls)                                
-                cleanStrokeSymbol.setPenCapStyle(cap)                        
-                join = parseLineJoin(ls)
+                firstColor = cleanStrokeSymbol.color()                
+                cleanStrokeSymbol.setPenCapStyle(cap)                                        
                 cleanStrokeSymbol.setPenJoinStyle(join)
-                
+                ## Fix stroke offset
                 if not geometry_general_type_str == 'line':
                     cleanStrokeSymbol.setOffset(stroke_width/2)
                 
@@ -170,16 +169,15 @@ def parseStroke(obj, symb):
                 if firstWidth < stroke_width:
                     if symbol_layer.color() == firstColor:
                         print("override simple line symbol stroke ")
+                        print("layers size is " + str(len(layers_obj)))
                         if 0 in layers_obj:
                             layers_obj[0].setWidth(stroke_width)
                             if not geometry_general_type_str == 'line':
                                 layers_obj[0].setOffset(stroke_width/2)
-                                
-                cap = parseLineCap(ls)                                
-                symbol_layer.setPenCapStyle(cap)                        
-                join = parseLineJoin(ls)
+                                                
+                symbol_layer.setPenCapStyle(cap)                                        
                 symbol_layer.setPenJoinStyle(join)
-                
+                ## Fix stroke offset
                 if not geometry_general_type_str == 'line':
                     symbol_layer.setOffset(stroke_width/2)
                 
@@ -224,25 +222,25 @@ def parseLineFill(obj):
         if ls['type'] == 'CIMHatchFill' and ls['enable']:            
             print(ls['sl_idx'])
             symb_def = ls['lineSymbol']['symbolLayers'][0]
-            # New definitions
+            ## New definitions
             angle = ls['rotation'] if 'rotation' in ls else 0            
             temp_color = symb_def['color']['values']
             new_color = colorToRgbArray(temp_color, symb_def['color']['type'])
-            # Hatch definitions
+            ## Hatch definitions
             fill_width = symb_def['width'] if 'width' in symb_def else 1
             fill_width = fill_width*point2mm
             fill_distance = ls['separation'] if 'separation' in ls else 0
             fill_distance = fill_distance*point2mm
             fill_offset = ls['offsetX'] if 'offsetX' in ls else 0
             fill_offset = fill_offset*point2mm
-            # Create symbol
+            ## Create symbol and set properties
             symbol_layer = QgsLinePatternFillSymbolLayer()
             symbol_layer.setColor(new_color)
             symbol_layer.setLineAngle(angle)
             symbol_layer.setLineWidth(fill_width)
             symbol_layer.setDistance(fill_distance)     
             symbol_layer = changeColorLock(symbol_layer, ls)
-            # Tweak save the first hatch width and use as offset
+            ## Tweak save the first hatch width and use as offset
             # TODO: Real fix, mark problematic files and unusual offsets
             if prev_hatch > 0 :
                 symbol_layer.setLineWidth(fill_width)
