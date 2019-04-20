@@ -2,6 +2,9 @@ import json
 from qgis.core import *
 import qgis.utils
 from PyQt5.QtGui import * 
+#from PyQt5.PySide2 import *
+from svgpathtools import svg2paths
+import cairosvg
 
 # test on layer with three cap style line renderers
 capStyles ={"Round" : 32, "Square" : 1, "Butt": 0}
@@ -256,6 +259,63 @@ def parseLineFill(obj):
         return [layers, layers_obj]
     else:
         return symbol
+        
+def parsePictureFill(obj, appendix):
+    pic_idx = 0
+    svg_symbol = ''
+    symb_idx = -1
+    for ls in obj['desc']:        
+        if ls['type'] == 'CIMPictureFill' and ls['enable']:   
+            #print("Picture url is " + ls["url"])
+            url_data = ls['url']
+            url_data_array = url_data.split(",")
+            #print(base64.b64decode(str(url_data_array[1])))
+            #new_str = base64.b64decode(str(url_data_array[1]))
+            #new_str = base64.b64decode(url_data_array[1])
+            #new_str = url_data_array[1].encode()
+            #print(new_str)
+            #print(new_str.decode('utf-8'))
+            template_f = open("C:\\xampp\\htdocs\\lyrxtoqml_d\\svg\\svg_template.svg")
+            template_str = template_f.read()            
+            template_str = str(template_str)            
+            #print(template_str)
+            #print('image_url' in template_str)
+            #print(str(url_data))
+            template_str = template_str.replace("image_url", str(url_data))
+#            dom = QDomDocument()
+#            dom = QgsSymbolLayerUtils.createSvgParameterElement(dom, "new", template_str)
+#            #dom.createAttribute("fill")                    
+#            print(dom.attributes())
+
+                    
+            f = open("lyrXsvg" + str(pic_idx)+appendix + ".svg","w")
+            name = f.name
+            print(name)
+            f.write(template_str)
+            #print(f)
+            template_f.close()
+            f.close()
+            svg_symbol = QgsSVGFillSymbolLayer.create()
+            svg_symbol.setSvgFilePath(  "c:\\" + name )
+            print(svg_symbol)
+            print(svg_symbol.svgFilePath())
+            new_color = colorToRgbArray([80,80,80,100], 'CIMRGBColor')     
+            svg_symbol.setSvgFillColor(new_color)
+            svg_symbol.setSvgStrokeColor(new_color)
+            symb_idx = ls['sl_idx']
+            
+#            attributes = svg2paths(name)
+#            print(attributes)
+#            new_name = "c:\\" + name + ".png"
+#            name = "c:\\" + name 
+#            cairosvg.svg2png(url=name, write_to=new_name)
+#            output = cairosvg.svg2ps(bytestring=template_str.encode('utf-8'))
+#            print(output)
+            
+            pic_idx = pic_idx + 1
+            
+    return [svg_symbol, symb_idx]
+            
 
 def changeColorLock(sl, symbol_def):
     color_lock = symbol_def['colorLocked'] if 'colorLocked' in symbol_def else ''    

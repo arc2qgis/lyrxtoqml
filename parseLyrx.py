@@ -3,11 +3,13 @@ import sys
 
 exec(open('C:/xampp/htdocs/lyrxtoqml_d/parseFunctions.py'.encode('utf-8')).read())
 import json
+import base64
 from qgis.core import *
 import qgis.utils
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from collections import OrderedDict
+
 
 qfd = QFileDialog()
 title = 'Choose a lyrx file for symbology to ' 
@@ -108,8 +110,14 @@ if not f == '':
             allSymbolLayers[ret_arr[1]] = ret                        
             noSolid = False
             if ret_arr[1] < 0:
-                noSolid = True                        
-            
+                noSolid = True   
+
+            svg_file_appendix = str(symbol_values[idx][0]).replace(" ","_")
+            picture_ret = parsePictureFill(symbol_def, svg_file_appendix)
+            if not picture_ret[0] == '':
+                print("pic fill try")
+                allSymbolLayers[picture_ret[1]] = picture_ret[0]
+                ret.appendSymbolLayer(picture_ret[0])
             ## Create hatch fill 
             lines_ret = parseLineFill(symbol_def)            
             #print(len(line_ret))
@@ -129,6 +137,9 @@ if not f == '':
                 for str_s in stroke_symbols:
                     #print(str_s)
                     allSymbolLayers[str_s] = stroke_symbols[str_s]                    
+                    
+            
+                
 
             ## Create character fills
             layers = []
