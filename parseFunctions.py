@@ -26,12 +26,10 @@ def getSymbolHalo(obj):
         halo = obj['symbol']['symbol']['haloSymbol']
     return halo
     
-def checkSymbolType(obj):   
-    #print(obj) 
+def checkSymbolType(obj):       
     obj_arr = {}
     sl_idx = 0
-    for o in obj:       
-        #print(o)
+    for o in obj:               
         if not 'desc' in obj_arr  :
             obj_arr['desc'] = []
         type = o['type']    
@@ -100,7 +98,7 @@ def tweakHaloSymbol(layers, haloDef):
     if not haloDef == '':
         #halo_symbol_def = checkSymbolType(haloDef[0])
         #print(halo_symbol_def)
-        print("halo " + haloDef['type'])
+        #print("halo " + haloDef['type'])
         new_layer = layers[len(layers) - 1].clone()
         new_layer.setSize(new_layer.size()*1.1)
         symbolHalo = haloDef['symbolLayers']
@@ -109,14 +107,14 @@ def tweakHaloSymbol(layers, haloDef):
         newFillSymbol = hallo_arr[0]        
         #print(newFillSymbol)
         newStroke = parseStroke(halo_symbol_def, newFillSymbol)  
-        print(newStroke)
-        for h in symbolHalo:
-            print("halo symbol layer is " + h['type'])
+        #print(newStroke)
+        #for h in symbolHalo:
+            #print("halo symbol layer is " + h['type'])
         if newFillSymbol != '':    
             new_layer.setStrokeColor(newFillSymbol.color())
             new_layer.setStrokeWidth(0.5)
         if not newStroke == '':
-            print('halo stroke color')
+            #print('halo stroke color')
             #new_layer.setColor(newFillSymbol.color())
             new_layer.setStrokeColor(newStroke[0].color())
         layers.append(new_layer)
@@ -220,7 +218,7 @@ def parseLineFill(obj):
     prev_hatch = 0
     for ls in obj['desc']:        
         if ls['type'] == 'CIMHatchFill' and ls['enable']:            
-            print(ls['sl_idx'])
+            #print(ls['sl_idx'])
             symb_def = ls['lineSymbol']['symbolLayers'][0]
             ## New definitions
             angle = ls['rotation'] if 'rotation' in ls else 0            
@@ -325,7 +323,7 @@ def parseCharacterFill(symb_def, max_size):
             new_angle = 360 - new_angle
             if negative_angle:
                 new_angle = new_angle*-1
-            print("180 corrct " + str(new_angle))
+            print("180 correction to " + str(new_angle))
         symbol.setAngle(new_angle)
         
         # Fix offset - rotation twaek
