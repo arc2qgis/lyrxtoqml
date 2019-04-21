@@ -412,7 +412,24 @@ def parseVectorSymbolLine(obj):
     symb_idx = -1
     for ls in obj['desc']:        
         if ls['type'] == 'CIMVectorMarker' and ls['enable']:   
-            print(ls['markerGraphics'])
+            if 'markerGraphics' in ls:
+                mg = ls['markerGraphics']
+                #print(mg)
+                print("mg len is " + str(len(mg)))
+                #if 'geometry' in mg[0]:
+                #    print(mg)
+                for mgs in mg:
+                    #print(mgs)
+                    if 'geometry' in mgs and 'x' in mgs['geometry']:
+                        #print(mgs)
+                        mgs_sl = mgs['symbol']['symbolLayers']
+                        #print(mgs_sl)
+                        for sl in mgs_sl:
+                            if sl['type'] == 'CIMCharacterMarker':
+                                #print(sl)
+                                pasred_symb = parseCharacterFill(sl, 0)
+                                print(pasred_symb)
+            
 
 def parseCharacterFill(symb_def, max_size):
     #print(symb_def['sl_idx'])
@@ -464,12 +481,12 @@ def parseCharacterFill(symb_def, max_size):
     if not geometry_general_type_str == 'point':
         symbol_base = QgsPointPatternFillSymbolLayer()
         ## Change to line symbol when diplacement is along line
-        if 'type' in symb_def['markerPlacement']:
+        if 'markerPlacement' in symb_def and 'type' in symb_def['markerPlacement']:
             if symb_def['markerPlacement']['type'] == 'CIMMarkerPlacementAlongLineSameSize':
                 symbol_base = QgsMarkerLineSymbolLayer()
         #print("Special fill " + geometry_general_type_str)        
         ## Fill pattern
-        if 'stepX' in symb_def['markerPlacement']:
+        if 'markerPlacement' in symb_def and 'stepX' in symb_def['markerPlacement']:
             symbol_base.setDistanceX(symb_def['markerPlacement']['stepX']*point2mm)
             symbol_base.setDistanceY(symb_def['markerPlacement']['stepY']*point2mm)    
                 
@@ -483,8 +500,8 @@ def parseCharacterFill(symb_def, max_size):
     
     #join = parseLineJoin(symb_def)
     #ret_val.setPenJoinStyle(join)
-    
-    return [ret_val, symb_def['sl_idx']]
+    sym_ord = symb_def['sl_idx'] if 'sl_idx' in symb_def else -2
+    return [ret_val, sym_ord]
     
 def parseLineCap(obj):
     lineCap = 1
