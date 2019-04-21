@@ -222,38 +222,101 @@ def parseLineFill(obj):
     for ls in obj['desc']:        
         if ls['type'] == 'CIMHatchFill' and ls['enable']:            
             #print(ls['sl_idx'])
-            symb_def = ls['lineSymbol']['symbolLayers'][0]
-            ## New definitions
-            angle = ls['rotation'] if 'rotation' in ls else 0            
-            temp_color = symb_def['color']['values']
-            new_color = colorToRgbArray(temp_color, symb_def['color']['type'])
-            ## Hatch definitions
-            fill_width = symb_def['width'] if 'width' in symb_def else 1
-            fill_width = fill_width*point2mm
-            fill_distance = ls['separation'] if 'separation' in ls else 0
-            fill_distance = fill_distance*point2mm
-            fill_offset = ls['offsetX'] if 'offsetX' in ls else 0
-            fill_offset = fill_offset*point2mm
-            ## Create symbol and set properties
-            symbol_layer = QgsLinePatternFillSymbolLayer()
-            symbol_layer.setColor(new_color)
-            symbol_layer.setLineAngle(angle)
-            symbol_layer.setLineWidth(fill_width)
-            symbol_layer.setDistance(fill_distance)     
-            symbol_layer = changeColorLock(symbol_layer, ls)
-            ## Tweak save the first hatch width and use as offset
-            # TODO: Real fix, mark problematic files and unusual offsets
-            if prev_hatch > 0 :
-                symbol_layer.setLineWidth(fill_width)
-                symbol_layer.setOffset(fill_width)
-                isOffsetEqFirstWidth = fill_width == prev_hatch
-                isDoubleHatch = True
+            sd_num = 0
+            full_symbol_layer = ''
+            for sd in reversed(ls['lineSymbol']['symbolLayers']):
+                #print(sd)
+                symb_def = sd
+                print("Line symbol sl num is " + str(sd_num) + "From " + str(len(ls['lineSymbol']['symbolLayers'])))
+                ## New definitions
+                angle = ls['rotation'] if 'rotation' in ls else 0            
+                temp_color = symb_def['color']['values']
+                new_color = colorToRgbArray(temp_color, symb_def['color']['type'])
+                ## Hatch definitions
+                fill_width = symb_def['width'] if 'width' in symb_def else 1
+                fill_width = fill_width*point2mm
+                fill_distance = ls['separation'] if 'separation' in ls else 0
+                fill_distance = fill_distance*point2mm
+                if fill_distance <= 0.6 and not fill_distance == 0:
+                    print("QGIS problem with line fill small distances")
+                    widthRatio = fill_width/point2mm/fill_distance
+                    if widthRatio < 1:
+                        widthRatio = 1/widthRatio 
+                    print(widthRatio)
+                    fill_distance = max(fill_distance*2,0.8)
+                    fill_width = fill_width/point2mm*widthRatio
+                    if fill_width > fill_distance:
+                        print("Fill width error")
+                       
+                fill_offset = ls['offsetX'] if 'offsetX' in ls else 0
+                #fill_offset = fill_offset*point2mm
+                ## Create symbol and set properties
+                symbol_layer = QgsLinePatternFillSymbolLayer() #if symbol_layer == '' else QgsSimpleLineSymbolLayer()
+                if sd_num == 0:
+                    full_symbol_layer = symbol_layer
+                else:
+                    symbol_layer = QgsSimpleLineSymbolLayer()    
+                    
+                dp = parseStrokeEffects(symb_def)
+                
+                symbol_layer.setColor(new_color)
+                if sd_num >= 0:
+                    #print("before def")
+                    if sd_num == 0:
+                        symbol_layer.setLineAngle(angle)
+                        symbol_layer.setLineWidth(fill_width)                    
+                        symbol_layer.setDistance(fill_distance)                     
+                        symbol_layer = changeColorLock(symbol_layer, ls)
+                    else:
+                        #symbol_layer.setAngle(angle)
+                        try:
+                            print("Try width")
+                            symbol_layer.setWidth(fill_width)                    
+                        except:
+                            print("set width error")
 
-            layers.append(symbol_layer)
-            layers_obj[ls['sl_idx']] = symbol_layer
+                
+                    if not dp == '':
+                        print("Dash pattern Fill is ")
+                        #print(dp)
+                        symbol_layer.subSymbol().symbolLayer(0).setUseCustomDashPattern(True)
+                        symbol_layer.subSymbol().symbolLayer(0).setCustomDashVector(dp)
+                        print(symbol_layer.subSymbol().symbolLayer(0).__class__.__name__)
+                    ## Tweak save the first hatch width and use as offset
+                    # TODO: Real fix, mark problematic files and unusual offsets
+                    if prev_hatch > 0 and sd_num == 0:
+                        symbol_layer.setLineWidth(fill_width)
+                        symbol_layer.setOffset(fill_width)
+                        #isOffsetEqFirstWidth = fill_width == prev_hatch
+                        isDoubleHatch = True
+                    elif not fill_offset == 0 and not dp == '' :
+                        symbol_layer.setOffset(fill_offset)
+                
+                    if not sd_num == 0:          
+                        try:    
+                            #print("Append subsymbol")
+                            #print(full_symbol_layer.__class__.__name__)
+#                            old_symbol = full_symbol_layer.subSymbol().symbolLayer(0).clone()
+#                            full_symbol_layer.subSymbol().appendSymbolLayer(old_symbol)
+#                            full_symbol_layer.subSymbol().changeSymbolLayer(0, symbol_layer)
+                            #new_sl = symbol_layer.clone()
+                            full_symbol_layer.subSymbol().appendSymbolLayer(symbol_layer)
+                            
+                        except:
+                            print("Failed append subsymbol")
+                            print(full_symbol_layer.__class__.__name__)
+                            print(full_symbol_layer.subSymbol().__class__.__name__)
+                        
+                sd_num = sd_num + 1                                       
+                
+            print(full_symbol_layer.__class__.__name__)
+            layers.append(full_symbol_layer)
+            layers_obj[ls['sl_idx']] = full_symbol_layer
+            
             if i == 0:
                 prev_hatch = fill_width
             i = i + 1
+                
                 
     if len(layers) > 0:
         return [layers, layers_obj]
@@ -269,24 +332,12 @@ def parsePictureFill(obj, appendix):
             #print("Picture url is " + ls["url"])
             url_data = ls['url']
             url_data_array = url_data.split(",")
-            #print(base64.b64decode(str(url_data_array[1])))
-            #new_str = base64.b64decode(str(url_data_array[1]))
-            #new_str = base64.b64decode(url_data_array[1])
-            #new_str = url_data_array[1].encode()
-            #print(new_str)
-            #print(new_str.decode('utf-8'))
+
             template_f = open("C:\\xampp\\htdocs\\lyrxtoqml_d\\svg\\svg_template.svg")
             template_str = template_f.read()            
             template_str = str(template_str)            
-            #print(template_str)
-            #print('image_url' in template_str)
-            #print(str(url_data))
+            
             template_str = template_str.replace("image_url", str(url_data))
-#            dom = QDomDocument()
-#            dom = QgsSymbolLayerUtils.createSvgParameterElement(dom, "new", template_str)
-#            #dom.createAttribute("fill")                    
-#            print(dom.attributes())
-
                     
             f = open("lyrXsvg" + str(pic_idx)+appendix + ".svg","w")
             name = f.name
@@ -297,20 +348,13 @@ def parsePictureFill(obj, appendix):
             f.close()
             svg_symbol = QgsSVGFillSymbolLayer.create()
             svg_symbol.setSvgFilePath(  "c:\\" + name )
-            print(svg_symbol)
-            print(svg_symbol.svgFilePath())
+            #print(svg_symbol)
+            #print(svg_symbol.svgFilePath())
             new_color = colorToRgbArray([80,80,80,100], 'CIMRGBColor')     
             svg_symbol.setSvgFillColor(new_color)
             svg_symbol.setSvgStrokeColor(new_color)
             symb_idx = ls['sl_idx']
-            
-#            attributes = svg2paths(name)
-#            print(attributes)
-#            new_name = "c:\\" + name + ".png"
-#            name = "c:\\" + name 
-#            cairosvg.svg2png(url=name, write_to=new_name)
-#            output = cairosvg.svg2ps(bytestring=template_str.encode('utf-8'))
-#            print(output)
+
             
             pic_idx = pic_idx + 1
             
@@ -361,6 +405,14 @@ def parseSimpleRenderer(obj):
         symbol = parseCharacterFill(symb_def, 0)
                         
     return symbol
+    
+def parseVectorSymbolLine(obj):
+    vector_idx = 0
+    vector_symbol = ''
+    symb_idx = -1
+    for ls in obj['desc']:        
+        if ls['type'] == 'CIMVectorMarker' and ls['enable']:   
+            print(ls['markerGraphics'])
 
 def parseCharacterFill(symb_def, max_size):
     #print(symb_def['sl_idx'])

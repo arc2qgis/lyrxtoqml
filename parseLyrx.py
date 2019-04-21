@@ -125,7 +125,10 @@ if not f == '':
                 line_ret = lines_ret[0]
                 print("hatch number is " + str(len(line_ret)))
                 for line in line_ret:
-                    ret.appendSymbolLayer(line)
+                    try:
+                        ret.appendSymbolLayer(line)
+                    except:
+                        print(line.__class__.__name__)
                 for line_sym in lines_ret[1]:
                     allSymbolLayers[line_sym] = lines_ret[1][line_sym]                    
 
@@ -138,7 +141,7 @@ if not f == '':
                     #print(str_s)
                     allSymbolLayers[str_s] = stroke_symbols[str_s]                    
                     
-            
+            parseVectorSymbolLine(symbol_def)
                 
 
             ## Create character fills
@@ -181,7 +184,7 @@ if not f == '':
             
             ## Create ordered object from allSymbolLayers
             ordered_obj = OrderedDict(sorted(allSymbolLayers.items(), key=lambda t: t[0]))
-            print("len " + str(len(allSymbolLayers)))
+            #print("len " + str(len(allSymbolLayers)))
             total_len = ret.symbolLayerCount()
             total_sym_len = len(ordered_obj)
             if -1 in ordered_obj  and not total_len in ordered_obj:
@@ -199,7 +202,7 @@ if not f == '':
                         newSymbolLayer  = ordered_obj[ord_sym_idx].clone()
                         locked = ''
                         if not 'SymbolLayer' in newSymbolLayer.__class__.__name__:
-                            print("try symbolLayer")
+                            #print("try symbolLayer")
                             newSymbolLayer = ordered_obj[ord_sym_idx].symbolLayer(0).clone()
                             locked = ordered_obj[ord_sym_idx].symbolLayer(0).isLocked()                                
                         else:
@@ -219,7 +222,7 @@ if not f == '':
             except:
                 print("order fail")
                     
-            print("new symbol count"  + str(new_symbol.symbolLayerCount()))
+            #print("new symbol count"  + str(new_symbol.symbolLayerCount()))
 
             ## Create new category                            
             symbol_val_prep = symbol_values[idx][0] + ", " + symbol_values[idx][1] if len(symbol_values[idx]) > 1 else symbol_values[idx][0]
