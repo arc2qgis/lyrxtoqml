@@ -3,8 +3,8 @@ from qgis.core import *
 import qgis.utils
 from PyQt5.QtGui import * 
 #from PyQt5.PySide2 import *
-from svgpathtools import svg2paths
-import cairosvg
+#from svgpathtools import svg2paths
+#import cairosvg
 
 # test on layer with three cap style line renderers
 capStyles ={"Round" : 32, "Square" : 1, "Butt": 0}
@@ -408,27 +408,77 @@ def parseSimpleRenderer(obj):
     
 def parseVectorSymbolLine(obj):
     vector_idx = 0
-    vector_symbol = ''
+    vector_symbols = []
+    vector_sl_array = []
     symb_idx = -1
+    base_symbol = ''
+    order = ''
     for ls in obj['desc']:        
-        if ls['type'] == 'CIMVectorMarker' and ls['enable']:   
+        if ls['type'] == 'CIMVectorMarker' and ls['enable']: 
+            
+            order = ls['sl_idx']
             if 'markerGraphics' in ls:
                 mg = ls['markerGraphics']
+                print("order is "+ str(ls['sl_idx']))
                 #print(mg)
-                print("mg len is " + str(len(mg)))
+                #print("mg len is " + str(len(mg)))
                 #if 'geometry' in mg[0]:
                 #    print(mg)
+                placement = 1
+                if 'markerPlacement' in ls and 'placementTemplate' in ls['markerPlacement']:
+                    placement = ls['markerPlacement']['placementTemplate'][0]
+                    print("placement " + str(placement))
+                    placement = placement*point2mm
+                    
+                    
                 for mgs in mg:
                     #print(mgs)
                     if 'geometry' in mgs and 'x' in mgs['geometry']:
-                        #print(mgs)
+                        print("geom is xy")
                         mgs_sl = mgs['symbol']['symbolLayers']
+                        vector_symbols = []
                         #print(mgs_sl)
                         for sl in mgs_sl:
                             if sl['type'] == 'CIMCharacterMarker':
                                 #print(sl)
                                 pasred_symb = parseCharacterFill(sl, 0)
-                                print(pasred_symb)
+                                print(pasred_symb[0].interval())
+                                pasred_symb[0].setInterval(placement)
+                                print(pasred_symb[0].interval())
+                                #print(pasred_symb[0])
+                                #if len(vector_symbols) == 0:
+                                vector_symbols.append(pasred_symb[0])
+                        if len(vector_symbols) > 1:
+                            base_symbol = vector_symbols[0].clone()
+                            vs_idx = 0
+                            for vs in vector_symbols:
+                                if vs_idx > 0:
+                                    subSymbLayer = vs.subSymbol().symbolLayer(0).clone()
+                                    origFirstSubSymbLayer = base_symbol.subSymbol().symbolLayer(0).clone()
+                                    #print(subSymbLayer)
+                                    print("append more")
+                                    base_symbol.subSymbol().appendSymbolLayer(origFirstSubSymbLayer)
+                                    base_symbol.subSymbol().changeSymbolLayer(0, subSymbLayer)
+                                    print("Count sub: " + str(base_symbol.subSymbol().symbolLayerCount()))
+                                vs_idx = vs_idx + 1
+                            vector_sl_array.append([base_symbol, order])
+                        else:
+                            print("append first")
+                            vector_sl_array.append([vector_symbols[0], order])
+                            
+                    else:
+                        print("geom is ")
+                        print(mgs['geometry'])
+    #print(base_symbol)    
+    #if not base_symbol == '':
+    #    print(base_symbol.subSymbol().symbolLayerCount())    
+    if len(vector_sl_array) == 0:
+        vector_sl_array = ''
+    else:
+        print(vector_sl_array)                    
+        print("vector array length " + str(len(vector_sl_array)))
+    
+    return vector_sl_array
             
 
 def parseCharacterFill(symb_def, max_size):
@@ -480,6 +530,8 @@ def parseCharacterFill(symb_def, max_size):
         
     if not geometry_general_type_str == 'point':
         symbol_base = QgsPointPatternFillSymbolLayer()
+        if geometry_general_type_str == 'line':
+            symbol_base = QgsMarkerLineSymbolLayer()
         ## Change to line symbol when diplacement is along line
         if 'markerPlacement' in symb_def and 'type' in symb_def['markerPlacement']:
             if symb_def['markerPlacement']['type'] == 'CIMMarkerPlacementAlongLineSameSize':

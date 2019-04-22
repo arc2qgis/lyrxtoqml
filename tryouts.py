@@ -1,5 +1,5 @@
 import os
-import sys
+import sys, traceback
 import json
 from qgis.core import *
 import qgis.utils
@@ -25,14 +25,26 @@ for c in cat:
 #            print(QgsSymbolLayerUtils.encodePenJoinStyle(sl.penJoinStyle()))
 #            print(sl.penCapStyle())
 #            print(QgsSymbolLayerUtils.encodePenCapStyle(sl.penCapStyle()))
-            print(sl.__class__.__name__)
+            #print(sl.__class__.__name__)
             classType = sl.__class__.__name__
-            if "SVG" in classType:                
+            if "Marker" in classType:     
+                print(sl.__class__.__name__)
+                print("marker number " + str(i))    
                 print(c.label())
                 print(sl.properties())
-                print(sl.svgFilePath())
+                print(sl.subSymbol().symbolLayer(0))
+                marker = sl.subSymbol().symbolLayer(0)
+                if 'SimpleMarker'  in marker.__class__.__name__:
+                    print(marker.properties())
+                    print(marker.prepareMarkerShape(1))
+                    print(marker.ogrFeatureStyle())
+                    print(marker.layerType())
+                    
+                    
+                #print(sl.svgFilePath())
             #print(sl.getDataDefinedProperty(21))
-        except:
+        except Exception:
             print("no cap")
+            print(traceback.format_exc().splitlines())
         i = i+1
     

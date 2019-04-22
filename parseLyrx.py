@@ -141,7 +141,17 @@ if not f == '':
                     #print(str_s)
                     allSymbolLayers[str_s] = stroke_symbols[str_s]                    
                     
-            parseVectorSymbolLine(symbol_def)
+            vector_layers = parseVectorSymbolLine(symbol_def)
+            print(vector_layers)
+            if not vector_layers == '':
+                vl_idx = vector_layers
+                for vl in vector_layers:
+                    v_symb = vl[0]
+                    v_ord = vl[1]
+                    allSymbolLayers[v_ord] = v_symb
+                    ret.appendSymbolLayer(v_symb)
+                #allSymbolLayers[vl_idx] = vector_layers[0]
+                #ret.appendSymbolLayer(vector_layers[0])
                 
 
             ## Create character fills
