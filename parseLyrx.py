@@ -268,8 +268,8 @@ if not f == '':
             #if len(symbol_values[idx] > 2):
             if not multi_cat[idx] == '':
                 for extra_label in multi_cat[idx]:
-                    symbol_val_prep = extra_label[0] + ", " + extra_label[1] if len(extra_label) > 1 else extra_label[0]            
-                    category = QgsRendererCategory(symbol_val_prep, new_symbol, symbol_val_prep)            
+                    symbol_val_prep1 = extra_label[0] + ", " + extra_label[1] if len(extra_label) > 1 else extra_label[0]            
+                    category = QgsRendererCategory(symbol_val_prep1, new_symbol, symbols_labels[idx])            
                     categories.append(category)
                    
             
