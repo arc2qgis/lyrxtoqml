@@ -6,6 +6,44 @@ import qgis.utils
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 
+paths_to_shapes_array = {
+    "Cross2" : {"paths" : [
+        [
+          [
+            -0.5,
+            0.5
+          ],
+          [
+            0.5,
+            -0.5
+          ]
+        ],
+        [
+          [
+            -0.5,
+            -0.5
+          ],
+          [
+            0.5,
+            0.5
+          ]
+        ]
+    ]},
+    "Line" : {"paths" : [
+        [
+          [
+            3,
+            0
+          ],
+          [
+            -3,
+            0
+          ]
+        ]
+      ]
+    }
+}
+
 # Tester: Add a layer with at least 3 categories and symbols with lines 
 # Change the line symbols cap style to the different options to get the style number
 layer = iface.activeLayer()
@@ -36,9 +74,14 @@ for c in cat:
                 marker = sl.subSymbol().symbolLayer(0)
                 if 'SimpleMarker'  in marker.__class__.__name__:
                     print(marker.properties())
-                    print(marker.prepareMarkerShape(1))
-                    print(marker.ogrFeatureStyle())
-                    print(marker.layerType())
+                    print(marker.prepareMarkerPath(marker.shape()))
+                    print(marker.shape())
+                    print(marker.availableShapes())
+                    
+                    new_poly = QPolygonF()
+                    #print(marker.shapeToPolygon(marker.shape(), new_poly))
+                    #shapeToPolygon
+                    #print(marker.layerType())
                     
                     
                 #print(sl.svgFilePath())

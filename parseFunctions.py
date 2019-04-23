@@ -2,6 +2,7 @@ import json
 from qgis.core import *
 import qgis.utils
 from PyQt5.QtGui import * 
+import re
 #from PyQt5.PySide2 import *
 #from svgpathtools import svg2paths
 #import cairosvg
@@ -10,6 +11,47 @@ from PyQt5.QtGui import *
 capStyles ={"Round" : 32, "Square" : 1, "Butt": 0}
 
 joinStyles = {"Miter": 0, "Bevel" : 64, "Round": 128}
+
+paths_to_shapes_array = {
+    "Cross2" : {"paths" : [
+        [
+          [
+            -0.5,
+            0.5
+          ],
+          [
+            0.5,
+            -0.5
+          ]
+        ],
+        [
+          [
+            -0.5,
+            -0.5
+          ],
+          [
+            0.5,
+            0.5
+          ]
+        ]
+    ]},
+    "Line" : {"paths" : [
+        [
+          [
+            3,
+            0
+          ],
+          [
+            -3,
+            0
+          ]
+        ]
+      ]
+    }
+}
+
+
+#print(paths_to_shapes_array)
 
 point2mm =  0.352778
 def read_lyrx(file=None):    
@@ -32,6 +74,7 @@ def getSymbolHalo(obj):
 def checkSymbolType(obj):       
     obj_arr = {}
     sl_idx = 0
+    count_disabled = 0
     for o in obj:               
         if not 'desc' in obj_arr  :
             obj_arr['desc'] = []
@@ -41,9 +84,12 @@ def checkSymbolType(obj):
         obj_arr[type] = obj_arr[type] + 1
         o['sl_idx'] = sl_idx
         obj_arr['desc'].append(o)
+        if 'enable' in o and not o['enable']:
+            count_disabled = count_disabled + 1
+            #print('disabled layer')
         sl_idx = sl_idx + 1
     #print(sl_idx)
-    obj_arr['layer_count'] = sl_idx
+    obj_arr['layer_count'] = sl_idx - count_disabled
     if 'CIMHatchFill' in obj_arr:
         obj_arr['template'] = 'hatch'
         obj_arr['template_hatch_num'] = obj_arr['CIMHatchFill']        
@@ -92,8 +138,9 @@ def parseSolidFill(obj):
     if symbol == '' or  geometry_general_type_str == 'line':
         symbol = QgsSymbol.defaultSymbol(layer.geometryType())
         new_color = colorToRgbArray([255,255,255,0], 'CIMRGBColor')            
-        symbol.setColor(new_color)            
-                        
+        symbol.setColor(new_color)   
+        #print("Fix base solid color""")
+                            
     #symbol['order'] = 0
     return [symbol, solid_index]
     
@@ -132,23 +179,20 @@ def parseStroke(obj, symb):
     firstColor = ''
     for ls in obj['desc']:
         #print(ls)
+        firstDash = False
         if ls['type'] == 'CIMSolidStroke' and ls['enable']:
+            ## Check dash effects
             dp = parseStrokeEffects(ls)            
-            temp_color = ls['color']['values']
-            new_color = colorToRgbArray(temp_color, ls['color']['type'])            
+            new_color = colorToRgbArray(ls['color']['values'], ls['color']['type'])            
             stroke_width = ls['width']*point2mm                         
             cap = parseLineCap(ls)                                
             join = parseLineJoin(ls)
-            if  i == 0 and  dp == '' :
-                #Change the first symbol layer stroke by layer type
-                if not geometry_general_type_str == 'line':                    
-                    symb.symbolLayer(0).setStrokeColor(new_color)
-                    symb.symbolLayer(0).setStrokeWidth(stroke_width)                
-                else:                    
-                    symb.symbolLayer(0).setColor(new_color)
-                    symb.symbolLayer(0).setWidth(stroke_width)                               
-                        
-                stroke_order = ls['sl_idx']
+            stroke_order = ls['sl_idx']
+            if  i == 0 and  dp == '' and not geometry_general_type_str == 'line':
+                #Change the first symbol layer stroke by layer type            
+                symb.symbolLayer(0).setStrokeColor(new_color)
+                symb.symbolLayer(0).setStrokeWidth(stroke_width)                
+                
                 cleanStrokeSymbol = symbol_layer = QgsSimpleLineSymbolLayer()
                 cleanStrokeSymbol.setColor(new_color)
                 cleanStrokeSymbol.setWidth(stroke_width)
@@ -162,6 +206,9 @@ def parseStroke(obj, symb):
                 
                 layers_obj[stroke_order] = cleanStrokeSymbol
             else :
+                if (i == 0):
+                    #print('dp FIRST!')
+                    firstDash = True
                 #print("Another stroke layer")
                 # Add simple line symbol layer (stroke)                
                 symbol_layer = QgsSimpleLineSymbolLayer()                
@@ -188,13 +235,12 @@ def parseStroke(obj, symb):
                     symbol_layer.setUseCustomDashPattern(True)
                     symbol_layer.setCustomDashVector(dp)
                 symbol_layer = changeColorLock(symbol_layer, ls)    
-                #print("stroke symbol idx is " + str(ls['sl_idx']))  
-                stroke_order = ls['sl_idx']                
+                #print("stroke symbol idx is " + str(ls['sl_idx']))                  
                 symb.appendSymbolLayer(symbol_layer)                            
                 layers_obj[stroke_order] = symbol_layer
             i = i + 1            
                 
-    return [symb, layers_obj]
+    return [symb, layers_obj, firstDash]
     
 def parseStrokeEffects(obj):    
     dash_pattern = ''
@@ -242,7 +288,7 @@ def parseLineFill(obj):
                     widthRatio = fill_width/point2mm/fill_distance
                     if widthRatio < 1:
                         widthRatio = 1/widthRatio 
-                    print(widthRatio)
+                    #print(widthRatio)
                     fill_distance = max(fill_distance*2,0.8)
                     fill_width = fill_width/point2mm*widthRatio
                     if fill_width > fill_distance:
@@ -277,11 +323,11 @@ def parseLineFill(obj):
 
                 
                     if not dp == '':
-                        print("Dash pattern Fill is ")
+                        #print("Dash pattern Fill is ")
                         #print(dp)
                         symbol_layer.subSymbol().symbolLayer(0).setUseCustomDashPattern(True)
                         symbol_layer.subSymbol().symbolLayer(0).setCustomDashVector(dp)
-                        print(symbol_layer.subSymbol().symbolLayer(0).__class__.__name__)
+                        #print(symbol_layer.subSymbol().symbolLayer(0).__class__.__name__)
                     ## Tweak save the first hatch width and use as offset
                     # TODO: Real fix, mark problematic files and unusual offsets
                     if prev_hatch > 0 and sd_num == 0:
@@ -293,13 +339,7 @@ def parseLineFill(obj):
                         symbol_layer.setOffset(fill_offset)
                 
                     if not sd_num == 0:          
-                        try:    
-                            #print("Append subsymbol")
-                            #print(full_symbol_layer.__class__.__name__)
-#                            old_symbol = full_symbol_layer.subSymbol().symbolLayer(0).clone()
-#                            full_symbol_layer.subSymbol().appendSymbolLayer(old_symbol)
-#                            full_symbol_layer.subSymbol().changeSymbolLayer(0, symbol_layer)
-                            #new_sl = symbol_layer.clone()
+                        try:                                
                             full_symbol_layer.subSymbol().appendSymbolLayer(symbol_layer)
                             
                         except:
@@ -309,7 +349,7 @@ def parseLineFill(obj):
                         
                 sd_num = sd_num + 1                                       
                 
-            print(full_symbol_layer.__class__.__name__)
+            #print(full_symbol_layer.__class__.__name__)
             layers.append(full_symbol_layer)
             layers_obj[ls['sl_idx']] = full_symbol_layer
             
@@ -419,7 +459,7 @@ def parseVectorSymbolLine(obj):
             order = ls['sl_idx']
             if 'markerGraphics' in ls:
                 mg = ls['markerGraphics']
-                print("order is "+ str(ls['sl_idx']))
+                #print("order is "+ str(ls['sl_idx']))
                 #print(mg)
                 #print("mg len is " + str(len(mg)))
                 #if 'geometry' in mg[0]:
@@ -428,8 +468,8 @@ def parseVectorSymbolLine(obj):
                 if 'markerPlacement' in ls and 'placementTemplate' in ls['markerPlacement']:
                     placement = ls['markerPlacement']['placementTemplate'][0]
                     print("placement " + str(placement))
-                    placement = placement*point2mm
-                    
+                    placement = placement*point2mm 
+                symbol_size = ls['size']*point2mm
                     
                 for mgs in mg:
                     #print(mgs)
@@ -439,14 +479,9 @@ def parseVectorSymbolLine(obj):
                         vector_symbols = []
                         #print(mgs_sl)
                         for sl in mgs_sl:
-                            if sl['type'] == 'CIMCharacterMarker':
-                                #print(sl)
-                                pasred_symb = parseCharacterFill(sl, 0)
-                                print(pasred_symb[0].interval())
-                                pasred_symb[0].setInterval(placement)
-                                print(pasred_symb[0].interval())
-                                #print(pasred_symb[0])
-                                #if len(vector_symbols) == 0:
+                            if sl['type'] == 'CIMCharacterMarker':                                
+                                pasred_symb = parseCharacterFill(sl, 0)                                
+                                pasred_symb[0].setInterval(placement)                                
                                 vector_symbols.append(pasred_symb[0])
                         if len(vector_symbols) > 1:
                             base_symbol = vector_symbols[0].clone()
@@ -459,7 +494,7 @@ def parseVectorSymbolLine(obj):
                                     print("append more")
                                     base_symbol.subSymbol().appendSymbolLayer(origFirstSubSymbLayer)
                                     base_symbol.subSymbol().changeSymbolLayer(0, subSymbLayer)
-                                    print("Count sub: " + str(base_symbol.subSymbol().symbolLayerCount()))
+                                    #print("Count sub: " + str(base_symbol.subSymbol().symbolLayerCount()))
                                 vs_idx = vs_idx + 1
                             vector_sl_array.append([base_symbol, order])
                         else:
@@ -469,6 +504,42 @@ def parseVectorSymbolLine(obj):
                     else:
                         print("geom is ")
                         print(mgs['geometry'])
+                        geom = mgs['geometry']
+                        ## Finding matching pattern
+                        for path_obj in paths_to_shapes_array:
+                            print(path_obj)
+                            path_pattern = []
+                            for path_p in geom['paths']:
+                                pair = []
+                                for path_pair in path_p:
+                                    #print(path_pair)                                    
+                                    new_str = ",".join(map(str, path_pair))                                    
+                                    new_str  = re.sub('[1-9]', '3', new_str)
+                                    new_str = new_str.split(',')
+                                    try:
+                                        new_str = [int(i) for i in new_str]
+                                    except:
+                                        new_str = [float(i) for i in new_str]
+                                        #print("no change")
+                                    #print(new_str)
+                                    pair.append(new_str)                                    
+                                                                   
+                                path_pattern.append(pair)
+                            
+                            alt_path_object = {"paths": path_pattern}
+                            print(alt_path_object)
+                            if paths_to_shapes_array[path_obj] == geom or paths_to_shapes_array[path_obj] == alt_path_object:
+                                print("Found geom!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                                print(QgsSimpleMarkerSymbolLayerBase.decodeShape(path_obj))
+                                shape_id, isShape = QgsSimpleMarkerSymbolLayerBase.decodeShape(path_obj)
+                                main_sym = QgsMarkerLineSymbolLayer.create()
+                                vect_symb = QgsSimpleMarkerSymbolLayer.create()                                
+                                vect_symb.setShape(shape_id)                                
+                                vect_symb.setSize(symbol_size)                                
+                                print(vect_symb)
+                                main_sym.subSymbol().changeSymbolLayer(0, vect_symb)
+                                main_sym.setInterval(placement)
+                                vector_sl_array.append([main_sym, order])
     #print(base_symbol)    
     #if not base_symbol == '':
     #    print(base_symbol.subSymbol().symbolLayerCount())    

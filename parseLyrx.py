@@ -21,7 +21,7 @@ geometry_type_str = QgsWkbTypes.displayString(int(layer.wkbType()))
 geometry_type = layer.wkbType()
 geometry_general_type_str = geometry_type_str.replace('Multi', '').lower()  
 geometry_general_type_str = geometry_general_type_str.replace('string', '')
-print(geometry_general_type_str)
+#print(geometry_general_type_str)
 
 #path = "c:/xampp/htdocs/lyrxtoqml_d/lyrx samples/"    
 #j_data = read_lyrx(path + "plan2.lyrx")
@@ -38,10 +38,13 @@ if not f == '':
     renderers_symb_type = []
     dataset_names = []
 
+    ## Read the lyrx file definitions
     for p in layerDef :
         print(p['name'])
+        ## Check for renderers
         temp_renderer = p['renderer'] if 'renderer' in p else ''
         renderers.append(temp_renderer)
+        ## Get lyrx shape type and original names
         if not temp_renderer == '':
             rend_type = temp_renderer['symbol']['type'] if 'symbol' in temp_renderer else  temp_renderer['defaultSymbol']['symbol']['type']
             renderers_symb_type.append(rend_type.lower())
@@ -51,9 +54,11 @@ if not f == '':
 
     print(renderers_symb_type)
     print(dataset_names)
-    # Find a renderer with the active layer field attribute
+    
+    ## Find a renderer with the active layer field attribute
+    ## Part 1: get matched shapes 
     rend_to_check = []
-    x = 0
+    x = 0    
     for r in renderers_symb_type:
         print(r)
         if geometry_general_type_str in r:            
@@ -61,15 +66,17 @@ if not f == '':
         x = x + 1
 
     rend_idx = -1
-    print(rend_to_check)
-    # Check in the active layers for matching classification fields  
+    #print(rend_to_check)
+    ## Check in the active layers for matching classification fields  
     for z in rend_to_check:
         print(renderers[z]['fields'][0])
         #print(layer.fields())
+        ## Check for matching column names
         field_exist = layer.fields().indexFromName(renderers[z]['fields'][0])
         if field_exist > -1:
             rend_idx = z
-    # Check simple symbol        
+    
+    ## Check if simple symbol
     if rend_idx < 0:
         active_name = layer.sourceName()
         rend_idx = dataset_names.index(active_name)
@@ -77,6 +84,7 @@ if not f == '':
 
 
     if rend_idx > -1 and not simple_symbol:
+        ## Create data arrays for symbols, labels, symbolLayers, halo options
         categories = []
         allSymbolLayers = {}
         class_field = renderers[rend_idx]['fields'][0] if len(renderers[rend_idx]['fields']) > 0 else 'CODE'
@@ -96,21 +104,25 @@ if not f == '':
         #print(symbol_layers)
         #print(halo_symbols)
         #print(symbol_layers)
+        ## Convert the symbolLayers definition of each CIMUniqueValueClass to qgis symbol and create a category
         idx = 0
         for sl in symbol_layers:
             print ("val :" + str(symbol_values[idx][0]))
             allSymbolLayers = {}                        
-            #print(sl[0]['type'])            
+            #print(sl[0]['type']) 
+            ## Create definition array - add order and more    
             symbol_def = checkSymbolType(sl)
-            layer_num = symbol_def['layer_count']
+            layer_num = symbol_def['layer_count']            
             print("Symology count is " + str(layer_num))            
             ret_arr = parseSolidFill(symbol_def)            
             ret = ret_arr[0]
             #print("solid fill idx " + str(ret_arr[1])) 
             allSymbolLayers[ret_arr[1]] = ret                        
             noSolid = False
+            firstDash = False
             if ret_arr[1] < 0:
                 noSolid = True   
+                print("NO SOLID!")
 
             svg_file_appendix = str(symbol_values[idx][0]).replace(" ","_")
             picture_ret = parsePictureFill(symbol_def, svg_file_appendix)
@@ -139,7 +151,8 @@ if not f == '':
                 stroke_symbols = ret_val[1] 
                 for str_s in stroke_symbols:
                     #print(str_s)
-                    allSymbolLayers[str_s] = stroke_symbols[str_s]                    
+                    allSymbolLayers[str_s] = stroke_symbols[str_s]                                    
+                firstDash = ret_val[2]
                     
             vector_layers = parseVectorSymbolLine(symbol_def)
             print(vector_layers)
@@ -150,6 +163,10 @@ if not f == '':
                     v_ord = vl[1]
                     allSymbolLayers[v_ord] = v_symb
                     ret.appendSymbolLayer(v_symb)
+                    print("After vector")
+                print(ret)
+                print(firstDash)
+                print(allSymbolLayers)
                 #allSymbolLayers[vl_idx] = vector_layers[0]
                 #ret.appendSymbolLayer(vector_layers[0])
                 
@@ -182,7 +199,9 @@ if not f == '':
             
             ## Delete default base layer if font marker filled or symbol mismatch
             #print("is Halo " + str(halo_symbols[idx] == ''))            
-            if ((len(layers) > 0 and noSolid ) or (layer_num < ret.symbolLayerCount()) ):                                
+            print("ret count is " + str(ret.symbolLayerCount()))
+            
+            if ((len(layers) > 0 and noSolid ) or (layer_num < ret.symbolLayerCount()) or firstDash ):                                
                 print("delete first symbol layer")
                 ret.deleteSymbolLayer(0)
                 if -1 in allSymbolLayers:
@@ -198,10 +217,10 @@ if not f == '':
             total_len = ret.symbolLayerCount()
             total_sym_len = len(ordered_obj)
             if -1 in ordered_obj  and not total_len in ordered_obj:
+                print("!!!!!!!!!!!!Fix by total length")
                 ordered_obj[total_len] = ordered_obj[-1].clone()
                 del(ordered_obj[-1])
-                
-                
+                                
             ## Create the new symbol from reveresed ordered_obj
             new_symbol = QgsSymbol.defaultSymbol(layer.geometryType())
             baseLayer = False
@@ -235,12 +254,11 @@ if not f == '':
             #print("new symbol count"  + str(new_symbol.symbolLayerCount()))
 
             ## Create new category                            
-            symbol_val_prep = symbol_values[idx][0] + ", " + symbol_values[idx][1] if len(symbol_values[idx]) > 1 else symbol_values[idx][0]
-            #print(symbol_val_prep)                        
+            symbol_val_prep = symbol_values[idx][0] + ", " + symbol_values[idx][1] if len(symbol_values[idx]) > 1 else symbol_values[idx][0]            
             category = QgsRendererCategory(symbol_val_prep, new_symbol, symbols_labels[idx])            
             categories.append(category)
             idx = idx + 1
-            #print(idx)    
+            
         ## Create renderer                        
         concat_str =  ", " + "', ', " + class_field2 + ")" if not class_field2 == "" else ")"
         renderer = QgsCategorizedSymbolRenderer("concat(" + class_field + concat_str, categories)
