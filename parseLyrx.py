@@ -23,11 +23,6 @@ geometry_general_type_str = geometry_type_str.replace('Multi', '').lower()
 geometry_general_type_str = geometry_general_type_str.replace('string', '')
 #print(geometry_general_type_str)
 
-#path = "c:/xampp/htdocs/lyrxtoqml_d/lyrx samples/"    
-#j_data = read_lyrx(path + "plan2.lyrx")
-#j_data = read_lyrx("c:/xampp/htdocs/lyrxtoqml_d/lyrx samples/rami plan.lyrx")
-#j_data = read_lyrx("c:/xampp/htdocs/lyrxtoqml_d/lyrx samples/nekudati.lyrx")
-
 if not f == '':
     j_data = read_lyrx(f)
 
@@ -96,14 +91,26 @@ if not f == '':
         symbol_layers = []
         symbol_values = []    
         halo_symbols = []
+        multi_cat = []
         for c in classes :    
             symbol_layers.append(getSymbolLayers(c))
             halo_symbols.append(getSymbolHalo(c))
             symbols_labels.append(c['label'])
             symbol_values.append(c['values'][0]['fieldValues'])
+            if len(c['values']) > 1:
+                vf_idx = 0
+                multi_array = []
+                for vf in c['values']:
+                    if vf_idx > 0:
+                       multi_array.append(vf['fieldValues'])             
+                    vf_idx = vf_idx + 1    
+                multi_cat.append(multi_array)
+            else:
+                multi_cat.append('')
         #print(symbol_layers)
         #print(halo_symbols)
         #print(symbol_layers)
+        print(multi_cat)
         ## Convert the symbolLayers definition of each CIMUniqueValueClass to qgis symbol and create a category
         idx = 0
         for sl in symbol_layers:
@@ -257,6 +264,15 @@ if not f == '':
             symbol_val_prep = symbol_values[idx][0] + ", " + symbol_values[idx][1] if len(symbol_values[idx]) > 1 else symbol_values[idx][0]            
             category = QgsRendererCategory(symbol_val_prep, new_symbol, symbols_labels[idx])            
             categories.append(category)
+            
+            #if len(symbol_values[idx] > 2):
+            if not multi_cat[idx] == '':
+                for extra_label in multi_cat[idx]:
+                    symbol_val_prep = extra_label[0] + ", " + extra_label[1] if len(extra_label) > 1 else extra_label[0]            
+                    category = QgsRendererCategory(symbol_val_prep, new_symbol, symbol_val_prep)            
+                    categories.append(category)
+                   
+            
             idx = idx + 1
             
         ## Create renderer                        

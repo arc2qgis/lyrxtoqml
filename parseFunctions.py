@@ -379,7 +379,7 @@ def parsePictureFill(obj, appendix):
             
             template_str = template_str.replace("image_url", str(url_data))
                     
-            f = open("lyrXsvg" + str(pic_idx)+appendix + ".svg","w")
+            f = open("c:\\lyrXsvg" + str(pic_idx)+appendix + ".svg","w")
             name = f.name
             print(name)
             f.write(template_str)
@@ -465,10 +465,16 @@ def parseVectorSymbolLine(obj):
                 #if 'geometry' in mg[0]:
                 #    print(mg)
                 placement = 1
+                markerDistanceX = ''
+                markerDistanceY = ''
                 if 'markerPlacement' in ls and 'placementTemplate' in ls['markerPlacement']:
                     placement = ls['markerPlacement']['placementTemplate'][0]
                     print("placement " + str(placement))
                     placement = placement*point2mm 
+                if 'markerPlacement' in ls and 'stepX' in ls['markerPlacement']:
+                    markerDistanceX = ls['markerPlacement']['stepX']*point2mm
+                    markerDistanceY = ls['markerPlacement']['stepY']*point2mm
+                        
                 symbol_size = ls['size']*point2mm
                     
                 for mgs in mg:
@@ -480,9 +486,16 @@ def parseVectorSymbolLine(obj):
                         #print(mgs_sl)
                         for sl in mgs_sl:
                             if sl['type'] == 'CIMCharacterMarker':                                
-                                pasred_symb = parseCharacterFill(sl, 0)                                
-                                pasred_symb[0].setInterval(placement)                                
-                                vector_symbols.append(pasred_symb[0])
+                                parsed_symb = parseCharacterFill(sl, 0) 
+                                if not parsed_symb[0] == '':
+                                    symb_type = parsed_symb[0].__class__.__name__
+                                    if 'MarkerLine' in symb_type:
+                                        parsed_symb[0].setInterval(placement)
+                                    else:
+                                        if not markerDistanceX == '':
+                                            parsed_symb[0].setDistanceX(markerDistanceX)
+                                            parsed_symb[0].setDistanceY(markerDistanceY)																		
+                                    vector_symbols.append(parsed_symb[0])
                         if len(vector_symbols) > 1:
                             base_symbol = vector_symbols[0].clone()
                             vs_idx = 0
@@ -506,40 +519,41 @@ def parseVectorSymbolLine(obj):
                         print(mgs['geometry'])
                         geom = mgs['geometry']
                         ## Finding matching pattern
-                        for path_obj in paths_to_shapes_array:
-                            print(path_obj)
-                            path_pattern = []
-                            for path_p in geom['paths']:
-                                pair = []
-                                for path_pair in path_p:
-                                    #print(path_pair)                                    
-                                    new_str = ",".join(map(str, path_pair))                                    
-                                    new_str  = re.sub('[1-9]', '3', new_str)
-                                    new_str = new_str.split(',')
-                                    try:
-                                        new_str = [int(i) for i in new_str]
-                                    except:
-                                        new_str = [float(i) for i in new_str]
-                                        #print("no change")
-                                    #print(new_str)
-                                    pair.append(new_str)                                    
-                                                                   
-                                path_pattern.append(pair)
-                            
-                            alt_path_object = {"paths": path_pattern}
-                            print(alt_path_object)
-                            if paths_to_shapes_array[path_obj] == geom or paths_to_shapes_array[path_obj] == alt_path_object:
-                                print("Found geom!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-                                print(QgsSimpleMarkerSymbolLayerBase.decodeShape(path_obj))
-                                shape_id, isShape = QgsSimpleMarkerSymbolLayerBase.decodeShape(path_obj)
-                                main_sym = QgsMarkerLineSymbolLayer.create()
-                                vect_symb = QgsSimpleMarkerSymbolLayer.create()                                
-                                vect_symb.setShape(shape_id)                                
-                                vect_symb.setSize(symbol_size)                                
-                                print(vect_symb)
-                                main_sym.subSymbol().changeSymbolLayer(0, vect_symb)
-                                main_sym.setInterval(placement)
-                                vector_sl_array.append([main_sym, order])
+                        if 'paths' in geom: 
+                            for path_obj in paths_to_shapes_array:
+                                print(path_obj)
+                                path_pattern = []
+                                for path_p in geom['paths']:
+                                    pair = []
+                                    for path_pair in path_p:
+                                        #print(path_pair)                                    
+                                        new_str = ",".join(map(str, path_pair))                                    
+                                        new_str  = re.sub('[1-9]', '3', new_str)
+                                        new_str = new_str.split(',')
+                                        try:
+                                            new_str = [int(i) for i in new_str]
+                                        except:
+                                            new_str = [float(i) for i in new_str]
+                                            #print("no change")
+                                        #print(new_str)
+                                        pair.append(new_str)                                    
+                                                                       
+                                    path_pattern.append(pair)
+                                
+                                alt_path_object = {"paths": path_pattern}
+                                #print(alt_path_object)
+                                if paths_to_shapes_array[path_obj] == geom or paths_to_shapes_array[path_obj] == alt_path_object:
+                                    #print("Found geom!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                                    #print(QgsSimpleMarkerSymbolLayerBase.decodeShape(path_obj))
+                                    shape_id, isShape = QgsSimpleMarkerSymbolLayerBase.decodeShape(path_obj)
+                                    main_sym = QgsMarkerLineSymbolLayer.create()
+                                    vect_symb = QgsSimpleMarkerSymbolLayer.create()                                
+                                    vect_symb.setShape(shape_id)                                
+                                    vect_symb.setSize(symbol_size)                                
+                                    print(vect_symb)
+                                    main_sym.subSymbol().changeSymbolLayer(0, vect_symb)
+                                    main_sym.setInterval(placement)
+                                    vector_sl_array.append([main_sym, order])
     #print(base_symbol)    
     #if not base_symbol == '':
     #    print(base_symbol.subSymbol().symbolLayerCount())    
