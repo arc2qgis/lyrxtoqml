@@ -115,8 +115,7 @@ if not f == '':
         idx = 0
         for sl in symbol_layers:
             print ("val :" + str(symbol_values[idx][0]))
-            allSymbolLayers = {}                        
-            #print(sl[0]['type']) 
+            allSymbolLayers = {}                                    
             ## Create definition array - add order and more    
             symbol_def = checkSymbolType(sl)
             layer_num = symbol_def['layer_count']            
@@ -128,8 +127,7 @@ if not f == '':
             noSolid = False
             firstDash = False
             if ret_arr[1] < 0:
-                noSolid = True   
-                print("NO SOLID!")
+                noSolid = True                   
 
             svg_file_appendix = str(symbol_values[idx][0]).replace(" ","_")
             picture_ret = parsePictureFill(symbol_def, svg_file_appendix)
@@ -161,7 +159,7 @@ if not f == '':
                     allSymbolLayers[str_s] = stroke_symbols[str_s]                                    
                 firstDash = ret_val[2]
                     
-            vector_layers = parseVectorSymbolLine(symbol_def)
+            vector_layers = parseVectorSymbolLine(symbol_def, False)
             print(vector_layers)
             if not vector_layers == '':
                 vl_idx = vector_layers
@@ -171,9 +169,7 @@ if not f == '':
                     allSymbolLayers[v_ord] = v_symb
                     ret.appendSymbolLayer(v_symb)
                     print("After vector")
-                print(ret)
-                print(firstDash)
-                print(allSymbolLayers)
+                
                 #allSymbolLayers[vl_idx] = vector_layers[0]
                 #ret.appendSymbolLayer(vector_layers[0])
                 
@@ -269,7 +265,7 @@ if not f == '':
             if not multi_cat[idx] == '':
                 for extra_label in multi_cat[idx]:
                     symbol_val_prep1 = extra_label[0] + ", " + extra_label[1] if len(extra_label) > 1 else extra_label[0]            
-                    category = QgsRendererCategory(symbol_val_prep1, new_symbol, symbols_labels[idx])            
+                    category = QgsRendererCategory(symbol_val_prep1, new_symbol.clone(), symbols_labels[idx])            
                     categories.append(category)
                    
             

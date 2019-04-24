@@ -50,6 +50,31 @@ paths_to_shapes_array = {
     }
 }
 
+circle_rings = {
+                    "curveRings" : [
+                      [
+                        [
+                          1.2246467991473532e-16,
+                          2
+                        ],
+                        {
+                          "a" : [
+                            [
+                              1.2246467991473532e-16,
+                              2
+                            ],
+                            [
+                              0,
+                              0
+                            ],
+                            0,
+                            1
+                          ]
+                        }
+                      ]
+                    ]
+                  }
+
 
 #print(paths_to_shapes_array)
 
@@ -379,7 +404,7 @@ def parsePictureFill(obj, appendix):
             
             template_str = template_str.replace("image_url", str(url_data))
                     
-            f = open("c:\\lyrXsvg" + str(pic_idx)+appendix + ".svg","w")
+            f = open(str(pic_idx)+appendix + ".svg","w")
             name = f.name
             print(name)
             f.write(template_str)
@@ -387,7 +412,7 @@ def parsePictureFill(obj, appendix):
             template_f.close()
             f.close()
             svg_symbol = QgsSVGFillSymbolLayer.create()
-            svg_symbol.setSvgFilePath(  "c:\\" + name )
+            svg_symbol.setSvgFilePath( name )
             #print(svg_symbol)
             #print(svg_symbol.svgFilePath())
             new_color = colorToRgbArray([80,80,80,100], 'CIMRGBColor')     
@@ -443,20 +468,36 @@ def parseSimpleRenderer(obj):
     
     if 'characterIndex' in symb_def and symb_def['type'] == 'CIMCharacterMarker':
         symbol = parseCharacterFill(symb_def, 0)
+    
+    if  symb_def['type'] == 'CIMVectorMarker':
+        vector_layers = parseVectorSymbolLine(symb_def, True)
+        print(vector_layers)
+        if not vector_layers == '':
+            vl_idx = vector_layers
+            for vl in vector_layers:
+                v_symb = vl[0]
+                v_ord = vl[1]
+                #allSymbolLayers[v_ord] = v_symb
+                symbol = v_symb
+                print("After simple vector")
+    
                         
     return symbol
     
-def parseVectorSymbolLine(obj):
+def parseVectorSymbolLine(obj, simple):
+    print(obj)
     vector_idx = 0
     vector_symbols = []
     vector_sl_array = []
     symb_idx = -1
     base_symbol = ''
     order = ''
+    if not 'desc' in obj:
+        obj['desc'] = [obj]
     for ls in obj['desc']:        
         if ls['type'] == 'CIMVectorMarker' and ls['enable']: 
             
-            order = ls['sl_idx']
+            order = ls['sl_idx'] if 'sl_idx' in ls else -3
             if 'markerGraphics' in ls:
                 mg = ls['markerGraphics']
                 #print("order is "+ str(ls['sl_idx']))
@@ -494,7 +535,7 @@ def parseVectorSymbolLine(obj):
                                     else:
                                         if not markerDistanceX == '':
                                             parsed_symb[0].setDistanceX(markerDistanceX)
-                                            parsed_symb[0].setDistanceY(markerDistanceY)																		
+                                            parsed_symb[0].setDistanceY(markerDistanceY)
                                     vector_symbols.append(parsed_symb[0])
                         if len(vector_symbols) > 1:
                             base_symbol = vector_symbols[0].clone()
@@ -554,6 +595,21 @@ def parseVectorSymbolLine(obj):
                                     main_sym.subSymbol().changeSymbolLayer(0, vect_symb)
                                     main_sym.setInterval(placement)
                                     vector_sl_array.append([main_sym, order])
+                        elif 'curveRings' in geom:                                                    
+                            vect_symb = QgsSimpleMarkerSymbolLayer.create()                                                            
+                            vect_symb.setSize(symbol_size)                                
+                            print(vect_symb)
+                            if not geometry_general_type_str == 'point':
+                                main_sym = QgsMarkerLineSymbolLayer.create()
+                                main_sym.subSymbol().changeSymbolLayer(0, vect_symb)
+                                main_sym.setInterval(placement)
+                                vector_sl_array.append([main_sym, order])
+                            else:
+                                vector_sl_array.append([vect_symb, order])
+                                
+                            
+                                
+                            
     #print(base_symbol)    
     #if not base_symbol == '':
     #    print(base_symbol.subSymbol().symbolLayerCount())    
