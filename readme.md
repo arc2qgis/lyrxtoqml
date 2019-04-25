@@ -1,12 +1,39 @@
 # qlyrx
 
-### This project allows you to read Arcgis Pro layer files (.lyrx) symbology directly into QGIS
+### This project enables using ArcGIS Pro symbology files (.lyrx) directly in QGIS.
+
+Important note: Esri’s former symbology format (*.lyr) is not supported. 
+It is possible to create a *.lyrx file by saving your symbology using ArcGIS Pro.
 
 The plugin was built and tested on Windows using QGIS >= 3.4 
 Tested on Ubuntu 18.04 as well.  
 
 * Not all symbology types are currently supported, if something is missing please open an [issue](https://github.com/arc2qgis/lyrxtoqml/issues)
 To use the working version of the plugin simply extract the `plugin/qlyrx` folder into your `qgis/python/plugins` folder.
+
+This plugin currently supports lyrx files with:
+	- Unique Values symbologies (1/2 fields classification)
+	- Simple renderers
+	- Esri/Qgis main conversions:
+		- CIMSolidFill
+		- CIMSolidStroke (=> QgsSimpleLineSymbolLayer or simple stroke)			
+		- CIMHatchFill => QgsLinePatternFillSymbolLayer
+		- CIMCharacterMarker => QgsFontMarkerSymbolLayer w QgsPointPatternFillSymbolLayer or QgsMarkerLineSymbolLayer  
+		- CIMGeometricEffectDashes => setCustomDashVector
+		- CIMPictureFill - creates svg from base64 image string		
+		- CIMVectorMarker
+			- CIMCharacterMarker collection
+			or
+			- Use predefined shapes QgsSimpleMarkerSymbolLayer w QgsMarkerLineSymbolLayer
+			[Esri predefined shapes uses 'paths' WIP]
+- Known issues 
+	- QGIS does not offer support for grouping categories
+	- SVG fill is generated as black and white image
+	- Rendering paths shape arrays to QGIS shapes
+	- Some lyrx symbology uses Esri's fonts, without it, QGIS will fall back to a default font
+- Next:
+	- Graduated symbology support
+	- Labels support	
   
 On Windows installations of OSGeo4W the folder should be in:  
 *C:\OSGeo4W64\apps\qgis-ltr\python\plugins* or  
@@ -15,13 +42,12 @@ On Windows installations of OSGeo4W the folder should be in:
   
 
 If  the installation method fails for you, you can compress the `plugin/qlyrx` into a **.zip** file and use the **install from zip** method within the QGIS plugin manager.  
-  
-  
+    
 The plugin is named **qlyrx**  
 
-you can save styles read with it using builtin QGIS methods.
+You can save your styles, after creating the new symbology, as *.sld/*.qml files
 
-to use the plugin select a *.lyrx* file and the layer it should style.
+To use the plugin select a *.lyrx* file and the layer it should style.
 
 
 This plugin is provided under the [*MIT License*](LICENSE)
