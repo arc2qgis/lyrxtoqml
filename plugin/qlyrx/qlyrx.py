@@ -26,15 +26,84 @@ from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from qgis.core import *
 import json
+import re
 import qgis.utils
 
 # Initialize Qt resources from file resources.py
 from .resources import *
 # Import the code for the dialog
 from .qlyrx_dialog import qlyrxDialog
+import os
 import os.path
+from collections import OrderedDict
 
+capStyles ={"Round" : 32, "Square" : 1, "Butt": 0}
+joinStyles = {"Miter": 0, "Bevel" : 64, "Round": 128}
 point2mm =  0.352778
+paths_to_shapes_array = {
+    "Cross2" : {"paths" : [
+        [
+          [
+            -0.5,
+            0.5
+          ],
+          [
+            0.5,
+            -0.5
+          ]
+        ],
+        [
+          [
+            -0.5,
+            -0.5
+          ],
+          [
+            0.5,
+            0.5
+          ]
+        ]
+    ]},
+    "Line" : {"paths" : [
+        [
+          [
+            3,
+            0
+          ],
+          [
+            -3,
+            0
+          ]
+        ]
+      ]
+    }
+}
+
+circle_rings = {
+                    "curveRings" : [
+                      [
+                        [
+                          1.2246467991473532e-16,
+                          2
+                        ],
+                        {
+                          "a" : [
+                            [
+                              1.2246467991473532e-16,
+                              2
+                            ],
+                            [
+                              0,
+                              0
+                            ],
+                            0,
+                            1
+                          ]
+                        }
+                      ]
+                    ]
+                  }
+
+
 
 class qlyrx:
     """QGIS Plugin Implementation."""
@@ -198,15 +267,27 @@ class qlyrx:
             data = json.load(json_file)
         return data
 
+
+    def getSymbolLayers(self, obj):    
+        return obj['symbol']['symbol']['symbolLayers']
     
+    
+    def getSymbolHalo(self, obj):
+        halo = ''
+        if 'haloSymbol' in obj['symbol']['symbol']:
+            halo = obj['symbol']['symbol']['haloSymbol']
+        return halo
+
+
     def readValueDef(self, obj):
         return obj['symbol']['symbol']['symbolLayers']
 
 
-    def checkSymbolType(self, obj):    
+    def checkSymbolType(self, obj):       
         obj_arr = {}
         sl_idx = 0
-        for o in obj:       
+        count_disabled = 0
+        for o in obj:               
             if not 'desc' in obj_arr  :
                 obj_arr['desc'] = []
             type = o['type']    
@@ -215,20 +296,50 @@ class qlyrx:
             obj_arr[type] = obj_arr[type] + 1
             o['sl_idx'] = sl_idx
             obj_arr['desc'].append(o)
+            if 'enable' in o and not o['enable']:
+                count_disabled = count_disabled + 1
+                #print('disabled layer')
             sl_idx = sl_idx + 1
         #print(sl_idx)
+        obj_arr['layer_count'] = sl_idx - count_disabled
         if 'CIMHatchFill' in obj_arr:
             obj_arr['template'] = 'hatch'
             obj_arr['template_hatch_num'] = obj_arr['CIMHatchFill']        
         else:
             obj_arr['template'] = 'simple'
+            
         if 'CIMLineSymbol' in obj_arr:
             obj_arr['template_line_num'] = obj_arr['CIMLineSymbol']        
         if 'CIMSolidFill' in obj_arr:
             obj_arr['template_solid_num'] = obj_arr['CIMSolidFill']
         if 'CIMSolidStroke' in obj_arr:
             obj_arr['template_stroke_num'] = obj_arr['CIMSolidStroke']
+        if 'CIMCharacterMarker' in obj_arr:
+            obj_arr['template_font_num'] = obj_arr['CIMCharacterMarker']
+        
         return obj_arr
+
+
+    def tweakHaloSymbol(self, layers, haloDef):
+        if not haloDef == '':
+            #halo_symbol_def = checkSymbolType(haloDef[0])
+            new_layer = layers[len(layers) - 1].clone()
+            new_layer.setSize(new_layer.size()*1.1)
+            symbolHalo = haloDef['symbolLayers']
+            halo_symbol_def = self.checkSymbolType(symbolHalo)
+            hallo_arr = self.parseSolidFill(halo_symbol_def)            
+            newFillSymbol = hallo_arr[0]        
+            newStroke = self.parseStroke(halo_symbol_def, newFillSymbol, layer)  
+            #for h in symbolHalo:
+                #print("halo symbol layer is " + h['type'])
+            if newFillSymbol != '':    
+                new_layer.setStrokeColor(newFillSymbol.color())
+                new_layer.setStrokeWidth(0.5)
+            if not newStroke == '':
+                #new_layer.setColor(newFillSymbol.color())
+                new_layer.setStrokeColor(newStroke[0].color())
+            layers.append(new_layer)
+        return layers
 
 
     def parseSymbolLayerSolidFill(self, layers):
@@ -258,6 +369,7 @@ class qlyrx:
                 new_color = self.colorToRgbArray(temp_color, ls['color']['type'])            
                 symbol = QgsSymbol.defaultSymbol(layer.geometryType())
                 symbol.setColor(new_color)  
+                ### TODO add lock
                 #print("solid index " + str(ls['sl_idx']))
                 #symbol.setStrokeColor(new_color)     
                 solid_index = ls['sl_idx']
@@ -266,124 +378,220 @@ class qlyrx:
             print("Extra " + str(i) + " solid fills")
         # Add default shape fill.
         if symbol == '' or  self.generalise_geom_type(layer) == 'line':
-                symbol = QgsSymbol.defaultSymbol(layer.geometryType())
-                new_color = self.colorToRgbArray([255,255,255,0], 'CIMRGBColor')
-                symbol.setColor(new_color)
+            symbol = QgsSymbol.defaultSymbol(layer.geometryType())
+            new_color = self.colorToRgbArray([255,255,255,0], 'CIMRGBColor')            
+            symbol.setColor(new_color)   
+                                
         #symbol['order'] = 0
         return [symbol, solid_index]
+
+
+    def parseLineCap(self, obj):
+        lineCap = 1
+        #print(obj['capStyle']) 
+        if 'capStyle' in obj:        
+            lineCap = capStyles[obj['capStyle']]
+        return lineCap
+
+
+    def parseLineJoin(self, obj):
+        lineJoin = 1
+        
+        if 'joinStyle' in obj:        
+            #print(obj['joinStyle']) 
+            lineJoin = joinStyles[obj['joinStyle']]
+        #print(lineJoin)
+        return lineJoin 
 
 
     def parseStroke(self, obj, symb, layer):                
         layers = []
         i = 0
+        layers_obj = {}
+        firstWidth = 0
+        firstColor = ''
+        geometry_general_type_str = self.generalise_geom_type(layer)
         for ls in obj['desc']:
-            #print(ls)
+            firstDash = False
             if ls['type'] == 'CIMSolidStroke' and ls['enable']:
-                dp = self.parseStrokeEffects(ls)
-                #print(dp)
-                temp_color = ls['color']['values']
-                new_color = self.colorToRgbArray(temp_color, ls['color']['type'])
-                #stroke_width = ls['width'] if ls['width'] < 2 else ls['width']*point2mm             
-                stroke_width = ls['width']*point2mm             
-                if  i == 0 and  dp == '' and i > 9:
-                    #print(geometry_general_type_str)
-                    if not self.generalise_geom_type(layer) == 'line':
-                        #print("stroke not line change the first SL")
-                        symb.symbolLayer(0).setStrokeColor(new_color)
-                        symb.symbolLayer(0).setStrokeWidth(stroke_width)                
-                    else:
-                        symb.symbolLayer(0).setColor(new_color)
-                        symb.symbolLayer(0).setWidth(stroke_width)                
-                    if not dp == '':
-                        #print("dash pattern in first layer")
-                        symb.symbolLayer(0).setUseCustomDashPattern(True)
-                        symb.symbolLayer(0).setCustomDashVector(dp)
-                            
+                ## Check dash effects
+                dp = self.parseStrokeEffects(ls)            
+                new_color = self.colorToRgbArray(ls['color']['values'], ls['color']['type'])            
+                stroke_width = ls['width']*point2mm                         
+                cap = self.parseLineCap(ls)                                
+                join = self.parseLineJoin(ls)
+                stroke_order = ls['sl_idx']
+                if  i == 0 and  dp == '' and not geometry_general_type_str == 'line':
+                    #Change the first symbol layer stroke by layer type            
+                    symb.symbolLayer(0).setStrokeColor(new_color)
+                    symb.symbolLayer(0).setStrokeWidth(stroke_width)                
+                    
+                    cleanStrokeSymbol = symbol_layer = QgsSimpleLineSymbolLayer()
+                    cleanStrokeSymbol.setColor(new_color)
+                    cleanStrokeSymbol.setWidth(stroke_width)
+                    firstWidth = stroke_width
+                    firstColor = cleanStrokeSymbol.color()                
+                    cleanStrokeSymbol.setPenCapStyle(cap)                                        
+                    cleanStrokeSymbol.setPenJoinStyle(join)
+                    ## Fix stroke offset
+                    if not geometry_general_type_str == 'line':
+                        cleanStrokeSymbol.setOffset(stroke_width/2)
+                    
+                    layers_obj[stroke_order] = cleanStrokeSymbol
                 else :
-                    #print("Another stroke layer")
-                    # Add simple line symbol layer (stroke)
-                    #if not geometry_general_type_str == 'line':
-                    symbol_layer = QgsSimpleLineSymbolLayer()
-                    #else:
-                        #symbol_layer = QgsMarkerLineSymbolLayer()
+                    if (i == 0):
+                        firstDash = True
+                    # Add simple line symbol layer (stroke)                
+                    symbol_layer = QgsSimpleLineSymbolLayer()                
                     symbol_layer.setColor(new_color)
                     symbol_layer.setWidth(stroke_width)
-                    # TODO: Check offset def (in poly etc)
-                    if not self.generalise_geom_type(layer) == 'line':
+                    if firstWidth < stroke_width:
+                        if symbol_layer.color() == firstColor:
+                            if 0 in layers_obj:
+                                layers_obj[0].setWidth(stroke_width)
+                                if not geometry_general_type_str == 'line':
+                                    layers_obj[0].setOffset(stroke_width/2)
+                                                    
+                    symbol_layer.setPenCapStyle(cap)                                        
+                    symbol_layer.setPenJoinStyle(join)
+                    ## Fix stroke offset
+                    if not geometry_general_type_str == 'line':
                         symbol_layer.setOffset(stroke_width/2)
-                    # TODO: Read join and shape
-                    if not self.generalise_geom_type(layer) == 'line':
-                        symbol_layer.setPenJoinStyle(0)
+                    # Add dash pattern
                     if not dp == '':
                         #print("dp in " + str(i) + " stroke symbol")
                         symbol_layer.setUseCustomDashPattern(True)
                         symbol_layer.setCustomDashVector(dp)
-                    #print("stroke symbol idx is " + str(ls['sl_idx']))  
-                    stroke_order = ls['sl_idx']
-                    symb.insertSymbolLayer(stroke_order, symbol_layer)            
-                    #print(symbol_layer.color())
+                    symbol_layer = self.changeColorLock(symbol_layer, ls)    
+                    #print("stroke symbol idx is " + str(ls['sl_idx']))                  
+                    symb.appendSymbolLayer(symbol_layer)                            
+                    layers_obj[stroke_order] = symbol_layer
                 i = i + 1            
-        return symb
+        return [symb, layers_obj, firstDash]
 
 
     def parseStrokeEffects(self, obj):
         dash_pattern = ''
         temp_array = []
         if 'effects' in obj:
-            #print("effects")
             if obj['effects'][0]['type'] == 'CIMGeometricEffectDashes' :
-               #print("dash") 
                 temp_pattern = obj['effects'][0]['dashTemplate']
                 for tp in temp_pattern:
                     temp_array.append(tp*point2mm)
-                dash_pattern = temp_array   
-                #print(dash_pattern)
+                dash_pattern = temp_array
         return dash_pattern
 
 
-    def parseLineFill(self, obj):
+    def parseLineFill(self, obj, layer):    
         isDoubleHatch = False
         isOffsetEqFirstWidth = True 
         symbol = ""
         layers = []
+        layers_obj = {}
         i = 0
         first_width = 0
         prev_hatch = 0
+        geometry_general_type_str = self.generalise_geom_type(layer)
         for ls in obj['desc']:        
             if ls['type'] == 'CIMHatchFill' and ls['enable']:            
-                symb_def = ls['lineSymbol']['symbolLayers'][0]
-                # New definitions
-                angle = ls['rotation'] if 'rotation' in ls else 0            
-                temp_color = symb_def['color']['values']
-                new_color = self.colorToRgbArray(temp_color, symb_def['color']['type'])
-                # Hatch definitions
-                fill_width = symb_def['width'] if 'width' in symb_def else 1
-                fill_width = fill_width*point2mm
-                fill_distance = ls['separation'] if 'separation' in ls else 0
-                fill_distance = fill_distance*point2mm
-                fill_offset = ls['offsetX'] if 'offsetX' in ls else 0
-                fill_offset = fill_offset*point2mm
-                # Create symbol
-                symbol_layer = QgsLinePatternFillSymbolLayer()
-                symbol_layer.setColor(new_color)
-                symbol_layer.setLineAngle(angle)
-                symbol_layer.setLineWidth(fill_width)
-                symbol_layer.setDistance(fill_distance)            
-                # Tweak save the first hatch width and use as offset
-                # TODO: Real fix, mark problematic files and unusual offsets
-                if prev_hatch > 0 :
-                    symbol_layer.setLineWidth(fill_width)
-                    symbol_layer.setOffset(fill_width)
-                    isOffsetEqFirstWidth = fill_width == prev_hatch
-                    isDoubleHatch = True
+                #print(ls['sl_idx'])
+                sd_num = 0
+                full_symbol_layer = ''
+                for sd in reversed(ls['lineSymbol']['symbolLayers']):
+                    #print(sd)
+                    symb_def = sd
+                    #print("Line symbol sl num is " + str(sd_num) + "From " + str(len(ls['lineSymbol']['symbolLayers'])))
+                    ## New definitions
+                    angle = ls['rotation'] if 'rotation' in ls else 0            
+                    temp_color = symb_def['color']['values']
+                    new_color = self.colorToRgbArray(temp_color, symb_def['color']['type'])
+                    ## Hatch definitions
+                    fill_width = symb_def['width'] if 'width' in symb_def else 1
+                    fill_width = fill_width*point2mm
+                    fill_distance = ls['separation'] if 'separation' in ls else 0
+                    fill_distance = fill_distance*point2mm
+                    if fill_distance <= 0.6 and not fill_distance == 0:
+                        # TODO: add user interaction
+                        print("QGIS problem with line fill small distances")
+                        widthRatio = fill_width/point2mm/fill_distance
+                        if widthRatio < 1:
+                            widthRatio = 1/widthRatio 
+                        #print(widthRatio)
+                        fill_distance = max(fill_distance*2,0.8)
+                        fill_width = fill_width/point2mm*widthRatio
+                        if fill_width > fill_distance:
+                            # TODO: add user interaction
+                            print("Fill width error")
+                           
+                    fill_offset = ls['offsetX'] if 'offsetX' in ls else 0
+                    #fill_offset = fill_offset*point2mm
+                    ## Create symbol and set properties
+                    symbol_layer = QgsLinePatternFillSymbolLayer() #if symbol_layer == '' else QgsSimpleLineSymbolLayer()
+                    if sd_num == 0:
+                        full_symbol_layer = symbol_layer
+                    else:
+                        symbol_layer = QgsSimpleLineSymbolLayer()    
+                        
+                    dp = self.parseStrokeEffects(symb_def)
+                    
+                    symbol_layer.setColor(new_color)
+                    if sd_num >= 0:
+                        #print("before def")
+                        if sd_num == 0:
+                            symbol_layer.setLineAngle(angle)
+                            symbol_layer.setLineWidth(fill_width)                    
+                            symbol_layer.setDistance(fill_distance)                     
+                            symbol_layer = self.changeColorLock(symbol_layer, ls)
+                        else:
+                            #symbol_layer.setAngle(angle)
+                            try:
+                                # TODO: add user interaction
+                                print("Try width")
+                                symbol_layer.setWidth(fill_width)                    
+                            except:
+                                # TODO: add user interaction
+                                print("set width error")
 
-                layers.append(symbol_layer)
+                    
+                        if not dp == '':
+                            #print("Dash pattern Fill is ")
+                            #print(dp)
+                            symbol_layer.subSymbol().symbolLayer(0).setUseCustomDashPattern(True)
+                            symbol_layer.subSymbol().symbolLayer(0).setCustomDashVector(dp)
+                            #print(symbol_layer.subSymbol().symbolLayer(0).__class__.__name__)
+                        ## Tweak save the first hatch width and use as offset
+                        # TODO: Real fix, mark problematic files and unusual offsets
+                        if prev_hatch > 0 and sd_num == 0:
+                            symbol_layer.setLineWidth(fill_width)
+                            symbol_layer.setOffset(fill_width)
+                            #isOffsetEqFirstWidth = fill_width == prev_hatch
+                            isDoubleHatch = True
+                        elif not fill_offset == 0 and not dp == '' :
+                            symbol_layer.setOffset(fill_offset)
+                    
+                        if not sd_num == 0:          
+                            try:                                
+                                full_symbol_layer.subSymbol().appendSymbolLayer(symbol_layer)
+                                
+                            except:
+                                # TODO: add user interaction
+                                print("Failed append subsymbol")
+                                print(full_symbol_layer.__class__.__name__)
+                                print(full_symbol_layer.subSymbol().__class__.__name__)
+                            
+                    sd_num = sd_num + 1                                       
+                    
+                #print(full_symbol_layer.__class__.__name__)
+                layers.append(full_symbol_layer)
+                layers_obj[ls['sl_idx']] = full_symbol_layer
+                
                 if i == 0:
                     prev_hatch = fill_width
                 i = i + 1
                     
+                    
         if len(layers) > 0:
-            return layers
+            return [layers, layers_obj]
         else:
             return symbol
 
@@ -399,6 +607,14 @@ class qlyrx:
         b = int((1 - ((y + k)/100)) * 255)
         
         return [r, g, b]
+
+
+    def changeColorLock(self, sl, symbol_def):
+        color_lock = symbol_def['colorLocked'] if 'colorLocked' in symbol_def else ''    
+        if not color_lock == '':
+            #print("locked")
+            sl.setLocked(True)
+        return sl
 
 
     def colorToRgbArray(self, color_array, type):
@@ -418,28 +634,53 @@ class qlyrx:
 
 
     def parseSimpleRenderer(self, obj):
+    
         symbol = ''
         symb_def = obj['symbol']['symbol']['symbolLayers'][0]
+        
         if 'characterIndex' in symb_def and symb_def['type'] == 'CIMCharacterMarker':
-            symbol = self.parseCharacterFill(symb_def, 0)
+            symbol = parseCharacterFill(symb_def, 0, layer)
+        
+        if  symb_def['type'] == 'CIMVectorMarker':
+            vector_layers = self.parseVectorSymbolLine(symb_def, True, layer)
+            #print(vector_layers)
+            if not vector_layers == '':
+                vl_idx = vector_layers
+                for vl in vector_layers:
+                    v_symb = vl[0]
+                    v_ord = vl[1]
+                    #allSymbolLayers[v_ord] = v_symb
+                    symbol = v_symb
+                    #print("After simple vector")
+    
         return symbol
 
 
     def parseCharacterFill(self, symb_def, max_size, layer):
-        symbol = QgsFontMarkerSymbolLayer()
-        
+        #print(symb_def['sl_idx'])
+        ret_val = ''
+        symbol = QgsFontMarkerSymbolLayer()            
         symbol.setFontFamily(symb_def['fontFamilyName'])
         symbol.setCharacter(chr(symb_def['characterIndex']))
         new_size = symb_def['size']*point2mm
         symbol.setSize(symb_def['size']*point2mm)
-        #symbol.markerOffsetWithWidthAndHeight()
+        geometry_general_type_str = self.generalise_geom_type(layer)
+        
         if 'rotation' in symb_def:
             new_angle = symb_def['rotation']
-            if new_angle < 0:
+            negative_angle = new_angle < 0
+            if (new_angle < 0 and new_angle <= -90) or new_angle == -45:
                 new_angle = abs(new_angle)
-            elif new_angle > 180:
+            elif new_angle < 0 and new_angle > -90:
+                new_angle = new_angle
+                
+            if abs(new_angle) > 180:                       
                 new_angle = 360 - new_angle
+                if negative_angle:
+                    new_angle = new_angle*-1
+                print("180 correction to " + str(new_angle))
             symbol.setAngle(new_angle)
+            
             # Fix offset - rotation twaek
             #symbol.setOffset(QPointF(0.3,0.0))
             #offset_tweak = (max_size - new_size)/2 if max_size > new_size else 0
@@ -447,27 +688,224 @@ class qlyrx:
             #if offset_tweak > 0:
             #    symbol.setOffset(QPointF(0,0))
         #print(symb_def['characterIndex'])
-        # Check fill color 
+        # Check fill color     
         if 'symbol' in symb_def :
             if 'symbolLayers' in symb_def['symbol']:
                 color = self.parseSymbolLayerSolidFill(symb_def['symbol']['symbolLayers'])
                 #print(color)
                 symbol.setColor(color[0])
-        if not self.generalise_geom_type(layer) == 'point':
+        ## Check offset        
+        offset_def = symb_def['anchorPoint'] if 'anchorPoint' in symb_def else ''
+        if 'x' in offset_def:
+            offsetX = offset_def['x']*point2mm
+            offsetY = offset_def['y']*point2mm 
+            symbol.setOffset(QPointF(offsetX,offsetY))
+            
+        ### TODO Fix offset after rotation
+        #print(symbol.markerOffsetWithWidthAndHeight(symbol, 8, 8))
+            
+        if not geometry_general_type_str == 'point':
             symbol_base = QgsPointPatternFillSymbolLayer()
-            if 'stepX' in symb_def['markerPlacement']:
+            if geometry_general_type_str == 'line':
+                symbol_base = QgsMarkerLineSymbolLayer()
+            ## Change to line symbol when diplacement is along line
+            if 'markerPlacement' in symb_def and 'type' in symb_def['markerPlacement']:
+                if symb_def['markerPlacement']['type'] == 'CIMMarkerPlacementAlongLineSameSize':
+                    symbol_base = QgsMarkerLineSymbolLayer()
+            #print("Special fill " + geometry_general_type_str)        
+            ## Fill pattern
+            if 'markerPlacement' in symb_def and 'stepX' in symb_def['markerPlacement']:
                 symbol_base.setDistanceX(symb_def['markerPlacement']['stepX']*point2mm)
                 symbol_base.setDistanceY(symb_def['markerPlacement']['stepY']*point2mm)    
-            
-            
+                    
             marker = QgsMarkerSymbol()
             marker.changeSymbolLayer(0, symbol)
-            symbol_base.setSubSymbol(marker)
-            
-            return symbol_base
+            symbol_base.setSubSymbol(marker)                
+            ret_val = symbol_base
         else:    
-            return symbol
+            ret_val = symbol
+        ret_val = self.changeColorLock(ret_val, symb_def)
+        
+        #join = parseLineJoin(symb_def)
+        #ret_val.setPenJoinStyle(join)
+        sym_ord = symb_def['sl_idx'] if 'sl_idx' in symb_def else -2
+        return [ret_val, sym_ord]
 
+
+    def parseVectorSymbolLine(self, obj, simple, layer):
+        #print(obj)
+        vector_idx = 0
+        vector_symbols = []
+        vector_sl_array = []
+        symb_idx = -1
+        base_symbol = ''
+        order = ''
+        geometry_general_type_str = self.generalise_geom_type(layer)
+        if not 'desc' in obj:
+            obj['desc'] = [obj]
+        for ls in obj['desc']:        
+            if ls['type'] == 'CIMVectorMarker' and ls['enable']: 
+                
+                order = ls['sl_idx'] if 'sl_idx' in ls else -3
+                if 'markerGraphics' in ls:
+                    mg = ls['markerGraphics']
+                    #print("order is "+ str(ls['sl_idx']))
+                    #print(mg)
+                    #print("mg len is " + str(len(mg)))
+                    #if 'geometry' in mg[0]:
+                    #    print(mg)
+                    placement = 1
+                    markerDistanceX = ''
+                    markerDistanceY = ''
+                    if 'markerPlacement' in ls and 'placementTemplate' in ls['markerPlacement']:
+                        placement = ls['markerPlacement']['placementTemplate'][0]
+                        #print("placement " + str(placement))
+                        placement = placement*point2mm 
+                    if 'markerPlacement' in ls and 'stepX' in ls['markerPlacement']:
+                        markerDistanceX = ls['markerPlacement']['stepX']*point2mm
+                        markerDistanceY = ls['markerPlacement']['stepY']*point2mm
+                            
+                    symbol_size = ls['size']*point2mm
+                        
+                    for mgs in mg:
+                        #print(mgs)
+                        if 'geometry' in mgs and 'x' in mgs['geometry']:
+                            #print("geom is xy")
+                            mgs_sl = mgs['symbol']['symbolLayers']
+                            vector_symbols = []
+                            #print(mgs_sl)
+                            for sl in mgs_sl:
+                                if sl['type'] == 'CIMCharacterMarker':                                
+                                    parsed_symb = self.parseCharacterFill(sl, 0, layer) 
+                                    if not parsed_symb[0] == '':
+                                        symb_type = parsed_symb[0].__class__.__name__
+                                        if 'MarkerLine' in symb_type:
+                                            parsed_symb[0].setInterval(placement)
+                                        else:
+                                            if not markerDistanceX == '':
+                                                parsed_symb[0].setDistanceX(markerDistanceX)
+                                                parsed_symb[0].setDistanceY(markerDistanceY)
+                                        vector_symbols.append(parsed_symb[0])
+                            if len(vector_symbols) > 1:
+                                base_symbol = vector_symbols[0].clone()
+                                vs_idx = 0
+                                for vs in vector_symbols:
+                                    if vs_idx > 0:
+                                        subSymbLayer = vs.subSymbol().symbolLayer(0).clone()
+                                        origFirstSubSymbLayer = base_symbol.subSymbol().symbolLayer(0).clone()
+                                        #print(subSymbLayer)
+                                        #print("append more")
+                                        base_symbol.subSymbol().appendSymbolLayer(origFirstSubSymbLayer)
+                                        base_symbol.subSymbol().changeSymbolLayer(0, subSymbLayer)
+                                        #print("Count sub: " + str(base_symbol.subSymbol().symbolLayerCount()))
+                                    vs_idx = vs_idx + 1
+                                vector_sl_array.append([base_symbol, order])
+                            else:
+                                #print("append first")
+                                vector_sl_array.append([vector_symbols[0], order])
+                                
+                        else:
+                            #print("geom is ")
+                            #print(mgs['geometry'])
+                            geom = mgs['geometry']
+                            ## Finding matching pattern
+                            if 'paths' in geom: 
+                                for path_obj in paths_to_shapes_array:
+                                    print(path_obj)
+                                    path_pattern = []
+                                    for path_p in geom['paths']:
+                                        pair = []
+                                        for path_pair in path_p:
+                                            #print(path_pair)                                    
+                                            new_str = ",".join(map(str, path_pair))                                    
+                                            new_str  = re.sub('[1-9]', '3', new_str)
+                                            new_str = new_str.split(',')
+                                            try:
+                                                new_str = [int(i) for i in new_str]
+                                            except:
+                                                new_str = [float(i) for i in new_str]
+                                                #print("no change")
+                                            #print(new_str)
+                                            pair.append(new_str)                                    
+                                                                           
+                                        path_pattern.append(pair)
+                                    
+                                    alt_path_object = {"paths": path_pattern}
+                                    #print(alt_path_object)
+                                    if paths_to_shapes_array[path_obj] == geom or paths_to_shapes_array[path_obj] == alt_path_object:
+                                        #print("Found geom!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                                        #print(QgsSimpleMarkerSymbolLayerBase.decodeShape(path_obj))
+                                        shape_id, isShape = QgsSimpleMarkerSymbolLayerBase.decodeShape(path_obj)
+                                        main_sym = QgsMarkerLineSymbolLayer.create()
+                                        vect_symb = QgsSimpleMarkerSymbolLayer.create()                                
+                                        vect_symb.setShape(shape_id)                                
+                                        vect_symb.setSize(symbol_size)                                
+                                        #print(vect_symb)
+                                        main_sym.subSymbol().changeSymbolLayer(0, vect_symb)
+                                        main_sym.setInterval(placement)
+                                        vector_sl_array.append([main_sym, order])
+                            elif 'curveRings' in geom:                                                    
+                                vect_symb = QgsSimpleMarkerSymbolLayer.create()                                                            
+                                vect_symb.setSize(symbol_size)                                
+                                print(vect_symb)
+                                if not geometry_general_type_str == 'point':
+                                    main_sym = QgsMarkerLineSymbolLayer.create()
+                                    main_sym.subSymbol().changeSymbolLayer(0, vect_symb)
+                                    main_sym.setInterval(placement)
+                                    vector_sl_array.append([main_sym, order])
+                                else:
+                                    vector_sl_array.append([vect_symb, order])
+        #print(base_symbol)    
+        #if not base_symbol == '':
+        #    print(base_symbol.subSymbol().symbolLayerCount())    
+        if len(vector_sl_array) == 0:
+            vector_sl_array = ''
+        else:
+            #print(vector_sl_array)                    
+            print("vector array length " + str(len(vector_sl_array)))
+        return vector_sl_array
+
+
+    def parsePictureFill(self, obj, appendix):
+        pic_idx = 0
+        svg_symbol = ''
+        symb_idx = -1
+        for ls in obj['desc']:        
+            if ls['type'] == 'CIMPictureFill' and ls['enable']:   
+                #print("Picture url is " + ls["url"])
+                url_data = ls['url']
+                url_data_array = url_data.split(",")
+                plugin_path = os.path.dirname(os.path.realpath(__file__))
+                svg_path = plugin_path+"\\img"
+                svg_paths = QgsSettings().value('svg/searchPathsForSVG')
+                if plugin_path not in svg_paths:
+                    QgsSettings().setValue('svg/searchPathsForSVG', svg_paths + [plugin_path, svg_path])
+                
+                template_f = open(plugin_path+"/img/svg_template.svg")
+                template_str = template_f.read()            
+                template_str = str(template_str)            
+                
+                template_str = template_str.replace("image_url", str(url_data))
+                        
+                f = open(str(pic_idx)+appendix + ".svg","w")
+                name = f.name
+                #print(name)
+                f.write(template_str)
+                #print(f)
+                template_f.close()
+                f.close()
+                svg_symbol = QgsSVGFillSymbolLayer.create()
+                svg_symbol.setSvgFilePath( name )
+                #print(svg_symbol)
+                #print(svg_symbol.svgFilePath())
+                new_color = self.colorToRgbArray([80,80,80,100], 'CIMRGBColor')     
+                svg_symbol.setSvgFillColor(new_color)
+                svg_symbol.setSvgStrokeColor(new_color)
+                symb_idx = ls['sl_idx']
+                pic_idx = pic_idx + 1
+                
+        return [svg_symbol, symb_idx]
+    
 
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
@@ -487,118 +925,251 @@ class qlyrx:
         dataset_names = []
 
         for p in layerDef :
-            #print(p['name'])
+            ## Check for renderers
             temp_renderer = p['renderer'] if 'renderer' in p else ''
             renderers.append(temp_renderer)
+            ## Get lyrx shape type and original names
             if not temp_renderer == '':
                 rend_type = temp_renderer['symbol']['type'] if 'symbol' in temp_renderer else  temp_renderer['defaultSymbol']['symbol']['type']
                 renderers_symb_type.append(rend_type.lower())
                 dataset = p['featureTable']['dataConnection']['dataset']
                 dataset_names.append(dataset)
 
-        #print(renderers_symb_type)
-        #print(dataset_names)
         # Find a renderer with the active layer field attribute
         rend_to_check = []
-        x = 0
+        x = 0    
         for r in renderers_symb_type:
-            #print(r)
-            if self.generalise_geom_type(layer) in r:            
+            print(r)
+            if geometry_general_type_str in r:            
                 rend_to_check.append(x)
             x = x + 1
 
         rend_idx = -1
         #print(rend_to_check)
-        # Check in the active layers for matching classification fields  
+        ## Check in the active layers for matching classification fields  
         for z in rend_to_check:
-            #print(renderers[z]['fields'][0])
+            print(renderers[z]['fields'][0])
             #print(layer.fields())
+            ## Check for matching column names
             field_exist = layer.fields().indexFromName(renderers[z]['fields'][0])
             if field_exist > -1:
                 rend_idx = z
+        
         # Check simple symbol        
         if rend_idx < 0:
             active_name = layer.sourceName()
             rend_idx = dataset_names.index(active_name)
             simple_symbol = True
 
-
         if rend_idx > -1 and not simple_symbol:
+            ## Create data arrays for symbols, labels, symbolLayers, halo options
             categories = []
+            allSymbolLayers = {}
             class_field = renderers[rend_idx]['fields'][0] if len(renderers[rend_idx]['fields']) > 0 else 'CODE'
             class_field2 = renderers[rend_idx]['fields'][1] if len(renderers[rend_idx]['fields']) > 1 else ''
+            class_field3 = renderers[rend_idx]['fields'][2] if len(renderers[rend_idx]['fields']) > 2 else ''
             #print(class_field)
             classes = renderers[rend_idx]["groups"][0]["classes"]
             symbols_labels = []
             symbol_layers = []
             symbol_values = []    
+            halo_symbols = []
+            multi_cat = []
             for c in classes :    
-                symbol_layers.append(self.readValueDef(c))
+                symbol_layers.append(self.getSymbolLayers(c))
+                halo_symbols.append(self.getSymbolHalo(c))
                 symbols_labels.append(c['label'])
                 symbol_values.append(c['values'][0]['fieldValues'])
-            
-            #print(symbol_layers)
+                if len(c['values']) > 1:
+                    vf_idx = 0
+                    multi_array = []
+                    for vf in c['values']:
+                        if vf_idx > 0:
+                           multi_array.append(vf['fieldValues'])             
+                        vf_idx = vf_idx + 1    
+                    multi_cat.append(multi_array)
+                else:
+                    multi_cat.append('')
+
+            ## Convert the symbolLayers definition of each CIMUniqueValueClass to qgis symbol and create a category
             idx = 0
             for sl in symbol_layers:
-                #print(sl[0]['type'])
+                #print ("val :" + str(symbol_values[idx][0]))
+                allSymbolLayers = {}                                    
+                ## Create definition array - add order and more    
                 symbol_def = self.checkSymbolType(sl)
-                #print(symbol_def)
-                ret_arr = self.parseSolidFill(symbol_def, layer)
+                layer_num = symbol_def['layer_count']            
+                #print("Symology count is " + str(layer_num))            
+                ret_arr = self.parseSolidFill(symbol_def, layer)            
                 ret = ret_arr[0]
                 #print("solid fill idx " + str(ret_arr[1])) 
-                #print(ret)
-                #print ("val :" + str(symbol_values[idx][0]))
-                line_ret = self.parseLineFill(symbol_def)
+                allSymbolLayers[ret_arr[1]] = ret                        
+                noSolid = False
+                firstDash = False
+                if ret_arr[1] < 0:
+                    noSolid = True                   
+
+                svg_file_appendix = str(symbol_values[idx][0]).replace(" ","_")
+                picture_ret = self.parsePictureFill(symbol_def, svg_file_appendix)
+                if not picture_ret[0] == '':
+                    print("pic fill try")
+                    allSymbolLayers[picture_ret[1]] = picture_ret[0]
+                    ret.appendSymbolLayer(picture_ret[0])
+                ## Create hatch fill 
+                lines_ret = self.parseLineFill(symbol_def, layer)            
                 #print(len(line_ret))
-                if not line_ret == '':
+                if not lines_ret == '':
+                    line_ret = lines_ret[0]
                     #print("hatch number is " + str(len(line_ret)))
                     for line in line_ret:
-                        ret.appendSymbolLayer(line)
-                
-                if 'template_stroke_num' in symbol_def and not ret == '':
+                        try:
+                            ret.appendSymbolLayer(line)
+                        except:
+                            print(line.__class__.__name__)
+                    for line_sym in lines_ret[1]:
+                        allSymbolLayers[line_sym] = lines_ret[1][line_sym]                    
+
+                ## Create line strokes symbols
+                if 'template_stroke_num' in symbol_def and not ret == '':                
+                    ret_val = self.parseStroke(symbol_def, ret, layer)  
+                    ret = ret_val[0]
+                    stroke_symbols = ret_val[1] 
+                    for str_s in stroke_symbols:
+                        #print(str_s)
+                        allSymbolLayers[str_s] = stroke_symbols[str_s]                                    
+                    firstDash = ret_val[2]
+                        
+                vector_layers = self.parseVectorSymbolLine(symbol_def, False, layer)
+                #print(vector_layers)
+                if not vector_layers == '':
+                    vl_idx = vector_layers
+                    for vl in vector_layers:
+                        v_symb = vl[0]
+                        v_ord = vl[1]
+                        allSymbolLayers[v_ord] = v_symb
+                        ret.appendSymbolLayer(v_symb)
+                        print("After vector")
                     
-                    ret = self.parseStroke(symbol_def, ret, layer)  
-                #print(len(sl))
-                #if 'characterIndex' in sl[0] and sl[0]['type'] == 'CIMCharacterMarker':        
+                    #allSymbolLayers[vl_idx] = vector_layers[0]
+                    #ret.appendSymbolLayer(vector_layers[0])
+                    
+
+                ## Create character fills
                 layers = []
-                max_size = 0
+                max_size = 0            
                 for charSl in sl:            
                     if 'characterIndex' in charSl and charSl['type'] == 'CIMCharacterMarker':
                         #print(charSl["enable"])
                         if charSl["enable"]:
-                            symbol = self.parseCharacterFill(charSl, max_size, layer)
+                            ret_sym = self.parseCharacterFill(charSl, max_size, layer)
+                            print(ret_sym)
+                            symbol = ret_sym[0]                        
                             if not symbol == '':
-                                #print("char symb desc " + str(charSl['sl_idx']))
-                                layers.append(symbol)    
-                                if self.generalise_geom_type(layer) == 'point':          
-                                    max_size = max(symbol.size(), max_size)
-                # Add the font fill in reverse order
-                x = 0
-                #print(str(len(layers)) + " Character marker symbols")
-                for rl in reversed(layers):
-                    ret.appendSymbolLayer(rl)
-                    #ret.symbolLayer(0).markerOffsetWithWidthAndHeight(ret, max_size, max_size)
+                                #print("char symb desc " + str(charSl['sl_idx']))                            
+                                layers.append(symbol)                            
+                                allSymbolLayers[ret_sym[1]] = symbol
+                                if geometry_general_type_str == 'point':          
+                                    max_size = max(symbol.size(), max_size)            
+                
+                if not halo_symbols[idx] == '':
+                    layers = tweakHaloSymbol(layers, halo_symbols[idx])
+                    allSymbolLayers[len(allSymbolLayers) + 1] = layers[len(layers) - 1].clone()            
+                
+                ## Add the font fill 
+                x = 0                                        
+                for rl in layers:                
+                    ret.appendSymbolLayer(rl)                
                     x = x + 1
+                
+                ## Delete default base layer if font marker filled or symbol mismatch
+                #print("is Halo " + str(halo_symbols[idx] == ''))            
+                #print("ret count is " + str(ret.symbolLayerCount()))
+                
+                if ((len(layers) > 0 and noSolid ) or (layer_num < ret.symbolLayerCount()) or firstDash ):                                
+                    print("delete first symbol layer")
+                    # add user interaction
+                    ret.deleteSymbolLayer(0)
+                    if -1 in allSymbolLayers:
+                        print("fix demo first layer")
+                        # add user interaction        
+                        del(allSymbolLayers[-1])
+                
+                #print("symbol layers in object " + str(len(allSymbolLayers)))
+                #print("ret symbols " + str(ret.symbolLayerCount()))
+                
+                ## Create ordered object from allSymbolLayers
+                ordered_obj = OrderedDict(sorted(allSymbolLayers.items(), key=lambda t: t[0]))
+                #print("len " + str(len(allSymbolLayers)))
+                total_len = ret.symbolLayerCount()
+                total_sym_len = len(ordered_obj)
+                if -1 in ordered_obj  and not total_len in ordered_obj:
+                    print("!!!!!!!!!!!!Fix by total length")
+                    # add user interaction
+                    ordered_obj[total_len] = ordered_obj[-1].clone()
+                    del(ordered_obj[-1])
+                                    
+                ## Create the new symbol from reveresed ordered_obj
+                new_symbol = QgsSymbol.defaultSymbol(layer.geometryType())
+                baseLayer = False
+                try:
+                    if total_sym_len > 1:
+                        for ord_sym_idx in reversed(ordered_obj):
+                            #print("in reorder loop " + str(ord_sym_idx))
+                            newSymbolLayer  = ordered_obj[ord_sym_idx].clone()
+                            locked = ''
+                            if not 'SymbolLayer' in newSymbolLayer.__class__.__name__:
+                                #print("try symbolLayer")
+                                newSymbolLayer = ordered_obj[ord_sym_idx].symbolLayer(0).clone()
+                                locked = ordered_obj[ord_sym_idx].symbolLayer(0).isLocked()                                
+                            else:
+                                locked = ordered_obj[ord_sym_idx].isLocked()
+                            #print("locked " + str(locked))    
+                            newSymbolLayer.setLocked(locked)    
+                            if not baseLayer:                                                        
+                                if "SymbolLayer" in newSymbolLayer.__class__.__name__:                                
+                                    new_symbol.changeSymbolLayer(0, newSymbolLayer)
+                                baseLayer = True
+                            else:                                                        
+                                if "SymbolLayer" in newSymbolLayer.__class__.__name__:                                
+                                    new_symbol.appendSymbolLayer(newSymbolLayer)                                
+                    else:
+                        #print("one layered symbol")
+                        new_symbol = ret
+                except:
+                    print("order fail")
+                    # add user interaction
+                        
+                #print("new symbol count"  + str(new_symbol.symbolLayerCount()))
 
-                symbol_val_prep = symbol_values[idx][0] + ", " + symbol_values[idx][1] if len(symbol_values[idx]) > 1 else symbol_values[idx][0]
-                #category = QgsRendererCategory(symbol_values[idx][0], ret, symbols_labels[idx])
-                category = QgsRendererCategory(symbol_val_prep, ret, symbols_labels[idx])
+                ## Create new category                            
+                symbol_val_prep = symbol_values[idx][0] + ", " + symbol_values[idx][1] if len(symbol_values[idx]) > 1 else symbol_values[idx][0]            
+                category = QgsRendererCategory(symbol_val_prep, new_symbol, symbols_labels[idx])            
                 categories.append(category)
+                
+                #if len(symbol_values[idx] > 2):
+                if not multi_cat[idx] == '':
+                    for extra_label in multi_cat[idx]:
+                        symbol_val_prep1 = extra_label[0] + ", " + extra_label[1] if len(extra_label) > 1 else extra_label[0]            
+                        category = QgsRendererCategory(symbol_val_prep1, new_symbol.clone(), symbols_labels[idx])            
+                        categories.append(category)
+                       
                 idx = idx + 1
-                #print(idx)    
-            
+                
+            ## Create renderer                        
             concat_str =  ", " + "', ', " + class_field2 + ")" if not class_field2 == "" else ")"
             renderer = QgsCategorizedSymbolRenderer("concat(" + class_field + concat_str, categories)
+            #print(categories)
             
         elif renderers[rend_idx]['type'] == 'CIMSimpleRenderer' and simple_symbol:
             single_symbology = self.parseSimpleRenderer(renderers[rend_idx])
             if not single_symbology == '':
-                #print('uni')
+                #print('simple renderer')
                 symbol = QgsSymbol.defaultSymbol(layer.geometryType())
                 symbol.changeSymbolLayer(0, single_symbology)
                 renderer = QgsSingleSymbolRenderer(symbol)
         else:
             print("No matching lyrx symbology fields found for the active layer")
+            # add user interaction
 
         # assign the created renderer to the layer
         if not renderer == '' :
@@ -623,6 +1194,7 @@ class qlyrx:
         if result:
             # Do something useful here - delete the line containing pass and
             # substitute with your code.
+            
             j_data = self.read_lyrx(self.dlg.file_select.filePath())
             
             layer = self.dlg.layer_select.currentLayer()
