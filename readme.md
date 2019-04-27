@@ -11,21 +11,21 @@ Tested on Ubuntu 18.04 as well.
 * Not all symbology types are currently supported, if something is missing please open an [issue](https://github.com/arc2qgis/lyrxtoqml/issues)
 To use the working version of the plugin simply extract the `plugin/qlyrx` folder into your `qgis/python/plugins` folder.
 
-This plugin currently supports lyrx files with:
-	- Unique Values symbologies (1/2 fields classification)
-	- Simple renderers
-	- Esri/Qgis main conversions:
-		- CIMSolidFill
-		- CIMSolidStroke (=> QgsSimpleLineSymbolLayer or simple stroke)			
-		- CIMHatchFill => QgsLinePatternFillSymbolLayer
-		- CIMCharacterMarker => QgsFontMarkerSymbolLayer w QgsPointPatternFillSymbolLayer or QgsMarkerLineSymbolLayer  
-		- CIMGeometricEffectDashes => setCustomDashVector
-		- CIMPictureFill - creates svg from base64 image string		
-		- CIMVectorMarker
-			- CIMCharacterMarker collection
-			or
-			- Use predefined shapes QgsSimpleMarkerSymbolLayer w QgsMarkerLineSymbolLayer
-			[Esri predefined shapes uses 'paths' WIP]
+This plugin currently supports lyrx files with:  
+	- Unique Values symbologies (1/2 fields classification)  
+	- Simple renderers  
+	- Esri/Qgis main conversions:  
+		- CIMSolidFill  
+		- CIMSolidStroke (=> QgsSimpleLineSymbolLayer or simple stroke)  			
+		- CIMHatchFill => QgsLinePatternFillSymbolLayer  
+		- CIMCharacterMarker => QgsFontMarkerSymbolLayer w QgsPointPatternFillSymbolLayer or QgsMarkerLineSymbolLayer    
+		- CIMGeometricEffectDashes => setCustomDashVector  
+		- CIMPictureFill - creates svg from base64 image string	  	
+		- CIMVectorMarker  
+			- CIMCharacterMarker collection  
+			or  
+			- Use predefined shapes QgsSimpleMarkerSymbolLayer w QgsMarkerLineSymbolLayer  
+			[Esri predefined shapes uses 'paths' WIP]  
 - Known issues 
 	- QGIS does not offer support for grouping categories
 	- SVG fill is generated as black and white image
