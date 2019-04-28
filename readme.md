@@ -16,11 +16,11 @@ This plugin currently supports lyrx files with:
 	- Simple renderers  
 	- Esri/Qgis main conversions:  
 		- CIMSolidFill  
-		- CIMSolidStroke (=> QgsSimpleLineSymbolLayer or simple stroke)  			
+		- CIMSolidStroke (=> QgsSimpleLineSymbolLayer or simple stroke)  
 		- CIMHatchFill => QgsLinePatternFillSymbolLayer  
-		- CIMCharacterMarker => QgsFontMarkerSymbolLayer w QgsPointPatternFillSymbolLayer or QgsMarkerLineSymbolLayer    
+		- CIMCharacterMarker => QgsFontMarkerSymbolLayer w QgsPointPatternFillSymbolLayer or QgsMarkerLineSymbolLayer  
 		- CIMGeometricEffectDashes => setCustomDashVector  
-		- CIMPictureFill - creates svg from base64 image string	  	
+		- CIMPictureFill - creates svg from base64 image string  
 		- CIMVectorMarker  
 			- CIMCharacterMarker collection  
 			or  
