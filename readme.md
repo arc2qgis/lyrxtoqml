@@ -22,9 +22,9 @@ This plugin currently supports lyrx files with:
    - CIMGeometricEffectDashes => setCustomDashVector  
    - CIMPictureFill - creates svg from base64 image string  
    - CIMVectorMarker  
-   - CIMCharacterMarker collection  
+      - CIMCharacterMarker collection  
 					or  
-   - Use predefined shapes QgsSimpleMarkerSymbolLayer w QgsMarkerLineSymbolLayer  
+      - Use predefined shapes QgsSimpleMarkerSymbolLayer w QgsMarkerLineSymbolLayer  
 				[Esri predefined shapes uses 'paths' WIP]  
 - Known issues 
 	- QGIS does not offer support for grouping categories
