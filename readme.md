@@ -11,6 +11,7 @@ Tested on Ubuntu 18.04 as well.
 * Not all symbology types are currently supported, if something is missing please open an [issue](https://github.com/arc2qgis/lyrxtoqml/issues)
 To use the working version of the plugin simply extract the `plugin/qlyrx` folder into your `qgis/python/plugins` folder.
 
+### Installation
 On Windows installations of OSGeo4W the folder should be in:  
 *C:\OSGeo4W64\apps\qgis-ltr\python\plugins* or  
 *C:\OSGeo4W64\apps\qgis\python\plugins* or  
@@ -19,11 +20,11 @@ On Windows installations of OSGeo4W the folder should be in:
 
 If  the installation method fails for you, you can use the [qlyrx.zip](./plugin/qlyrx/qlyrx.zip) file and use the **install from zip** method within the QGIS plugin manager.  
 
-
+### Functionality
 This plugin currently supports lyrx files with:  
-   - Unique Values symbologies (1/2 fields classification)  
+   - Unique Values symbologies (1 or 2 fields classification) => QGIS Categorized 
    - Simple renderers  
-Esri/Qgis main conversions:  
+ Esri/Qgis main conversions:  
     - CIMSolidFill  
     - CIMSolidStroke (=> QgsSimpleLineSymbolLayer or simple stroke)  
     - CIMHatchFill => QgsLinePatternFillSymbolLayer  
@@ -35,12 +36,12 @@ Esri/Qgis main conversions:
 					or  
       - Use predefined shapes QgsSimpleMarkerSymbolLayer w QgsMarkerLineSymbolLayer  
 				[Esri predefined shapes uses 'paths' WIP]  
-Known issues 
+ Known issues:
   - QGIS does not offer support for grouping categories
   - SVG fill is generated as black and white image
   - Rendering paths shape arrays to QGIS shapes
   - Some lyrx symbology uses Esri's fonts, without it, QGIS will fall back to a default font
-Next:
+ Next:
   - Graduated symbology support
   - Labels support	
   
