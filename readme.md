@@ -26,8 +26,8 @@ If  the installation method fails for you, download the [qlyrx.zip](./plugin/qly
    - Simple renderers  
 
 - Esri/Qgis main conversions:  
-    - CIMSolidFill  
-    - CIMSolidStroke (=> QgsSimpleLineSymbolLayer or simple stroke)  
+    - CIMSolidFill  => QgsSymbol.defaultSymbol
+    - CIMSolidStroke (=> QgsSimpleLineSymbolLayer or base symbol stroke)  
     - CIMHatchFill => QgsLinePatternFillSymbolLayer  
     - CIMCharacterMarker => QgsFontMarkerSymbolLayer w QgsPointPatternFillSymbolLayer or QgsMarkerLineSymbolLayer  
     - CIMGeometricEffectDashes => setCustomDashVector  
@@ -41,7 +41,9 @@ If  the installation method fails for you, download the [qlyrx.zip](./plugin/qly
    - QGIS does not offer support for grouping categories  
    - SVG base64 image fill is generated as black and white image  
    - Converting CIMVectorMarker from shape paths arrays to QGIS shapes is a customized tweak
-   - Some lyrx symbology uses Esri's or extrnal **fonts**, without it, QGIS will fall back to a default font  
+   - Some lyrx symbology uses Esri's or extrnal **fonts**, without it, QGIS will fall back to a default font 
+   - Problem in converting complex CIMVectorMarker properties
+   - Symbol 'halo' is not supported in QGIS (our tweak is to duplicate and enlarge the bottom most symbol, problem when using with different symbol shapes)
 - Next:  
    - Graduated symbology support  
    - Labels support  
@@ -50,7 +52,7 @@ If  the installation method fails for you, download the [qlyrx.zip](./plugin/qly
     
 The plugin is named **qlyrx**  
 
-You can save your styles, after creating the new symbology, as *.sld/*.qml files
+Save your styles, after creating the new symbology with the plugin as qgis native *.sld/*.qml formats
 
 To use the plugin select a *.lyrx* file and the layer it should style.
 
