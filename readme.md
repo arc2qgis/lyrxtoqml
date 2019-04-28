@@ -21,7 +21,7 @@ On Windows installations of OSGeo4W the folder should be in:
 If  the installation method fails for you, you can use the [qlyrx.zip](./plugin/qlyrx/qlyrx.zip) file and use the **install from zip** method within the QGIS plugin manager.  
 
 ### Functionality
-This plugin currently supports lyrx files with:  
+- The plugin currently supports lyrx files with:  
    - Unique Values symbologies (1 or 2 fields classification) => QGIS Categorized 
    - Simple renderers  
 
