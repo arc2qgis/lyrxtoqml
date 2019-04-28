@@ -2,10 +2,10 @@
 
 ### This project enables using ArcGIS Pro symbology files (.lyrx) directly in QGIS.
 
-Important note: Esri’s former symbology format (*.lyr) is not supported. 
-It is possible to create a *.lyrx file by saving your symbology using ArcGIS Pro.
+Important note: Esri’s former symbology format (*.lyr) is not supported.  
+It is possible to generate a *.lyrx file by opening and saving your *.lyr file in ArcGIS Pro.
 
-The plugin was built and tested on Windows using QGIS >= 3.4 
+The plugin was built and tested on Windows using QGIS >= 3.4  
 Tested on Ubuntu 18.04 as well.  
 
 * Not all symbology types are currently supported, if something is missing please open an [issue](https://github.com/arc2qgis/lyrxtoqml/issues)
