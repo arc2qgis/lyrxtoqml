@@ -36,11 +36,11 @@ This plugin currently supports lyrx files with:
 					or  
       - Use predefined shapes QgsSimpleMarkerSymbolLayer w QgsMarkerLineSymbolLayer  
 				[Esri predefined shapes uses 'paths' WIP]  
-  Known issues:
-  - QGIS does not offer support for grouping categories
+  Known issues:  
+  - QGIS does not offer support for grouping categories  
   - SVG fill is generated as black and white image
-  - Rendering paths shape arrays to QGIS shapes
-  - Some lyrx symbology uses Esri's fonts, without it, QGIS will fall back to a default font
+  - Rendering paths shape arrays to QGIS shapes  
+  - Some lyrx symbology uses Esri's fonts, without it, QGIS will fall back to a default font  
   Next:
   - Graduated symbology support
   - Labels support	
