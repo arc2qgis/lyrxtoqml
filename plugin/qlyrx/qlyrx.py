@@ -22,6 +22,7 @@
  ***************************************************************************/
 """
 from PyQt5.QtCore import QSettings, QTranslator, qVersion, QCoreApplication
+from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from qgis.core import *
@@ -320,14 +321,14 @@ class qlyrx:
         return obj_arr
 
 
-    def tweakHaloSymbol(self, layers, haloDef):
+    def tweakHaloSymbol(self, layers, haloDef, layer):
         if not haloDef == '':
             #halo_symbol_def = checkSymbolType(haloDef[0])
             new_layer = layers[len(layers) - 1].clone()
             new_layer.setSize(new_layer.size()*1.1)
             symbolHalo = haloDef['symbolLayers']
             halo_symbol_def = self.checkSymbolType(symbolHalo)
-            hallo_arr = self.parseSolidFill(halo_symbol_def)            
+            hallo_arr = self.parseSolidFill(halo_symbol_def, layer)            
             newFillSymbol = hallo_arr[0]        
             newStroke = self.parseStroke(halo_symbol_def, newFillSymbol, layer)  
             #for h in symbolHalo:
@@ -678,7 +679,7 @@ class qlyrx:
                 new_angle = 360 - new_angle
                 if negative_angle:
                     new_angle = new_angle*-1
-                print("180 correction to " + str(new_angle))
+                #print("180 correction to " + str(new_angle))
             symbol.setAngle(new_angle)
             
             # Fix offset - rotation twaek
@@ -811,7 +812,7 @@ class qlyrx:
                             ## Finding matching pattern
                             if 'paths' in geom: 
                                 for path_obj in paths_to_shapes_array:
-                                    print(path_obj)
+                                    #print(path_obj)
                                     path_pattern = []
                                     for path_p in geom['paths']:
                                         pair = []
@@ -847,7 +848,7 @@ class qlyrx:
                             elif 'curveRings' in geom:                                                    
                                 vect_symb = QgsSimpleMarkerSymbolLayer.create()                                                            
                                 vect_symb.setSize(symbol_size)                                
-                                print(vect_symb)
+                                #print(vect_symb)
                                 if not geometry_general_type_str == 'point':
                                     main_sym = QgsMarkerLineSymbolLayer.create()
                                     main_sym.subSymbol().changeSymbolLayer(0, vect_symb)
@@ -939,7 +940,7 @@ class qlyrx:
         rend_to_check = []
         x = 0    
         for r in renderers_symb_type:
-            print(r)
+            #print(r)
             if geometry_general_type_str in r:            
                 rend_to_check.append(x)
             x = x + 1
@@ -948,7 +949,7 @@ class qlyrx:
         #print(rend_to_check)
         ## Check in the active layers for matching classification fields  
         for z in rend_to_check:
-            print(renderers[z]['fields'][0])
+            #print(renderers[z]['fields'][0])
             #print(layer.fields())
             ## Check for matching column names
             field_exist = layer.fields().indexFromName(renderers[z]['fields'][0])
@@ -1048,7 +1049,7 @@ class qlyrx:
                         v_ord = vl[1]
                         allSymbolLayers[v_ord] = v_symb
                         ret.appendSymbolLayer(v_symb)
-                        print("After vector")
+                        #print("After vector")
                     
                     #allSymbolLayers[vl_idx] = vector_layers[0]
                     #ret.appendSymbolLayer(vector_layers[0])
@@ -1062,7 +1063,7 @@ class qlyrx:
                         #print(charSl["enable"])
                         if charSl["enable"]:
                             ret_sym = self.parseCharacterFill(charSl, max_size, layer)
-                            print(ret_sym)
+                            #print(ret_sym)
                             symbol = ret_sym[0]                        
                             if not symbol == '':
                                 #print("char symb desc " + str(charSl['sl_idx']))                            
@@ -1072,7 +1073,7 @@ class qlyrx:
                                     max_size = max(symbol.size(), max_size)            
                 
                 if not halo_symbols[idx] == '':
-                    layers = tweakHaloSymbol(layers, halo_symbols[idx])
+                    layers = self.tweakHaloSymbol(layers, halo_symbols[idx], layer)
                     allSymbolLayers[len(allSymbolLayers) + 1] = layers[len(layers) - 1].clone()            
                 
                 ## Add the font fill 
@@ -1103,8 +1104,8 @@ class qlyrx:
                 total_len = ret.symbolLayerCount()
                 total_sym_len = len(ordered_obj)
                 if -1 in ordered_obj  and not total_len in ordered_obj:
-                    print("!!!!!!!!!!!!Fix by total length")
-                    # add user interaction
+                    #print("!!!!!!!!!!!!Fix by total length")
+                    # TODO: add user interaction
                     ordered_obj[total_len] = ordered_obj[-1].clone()
                     del(ordered_obj[-1])
                                     
