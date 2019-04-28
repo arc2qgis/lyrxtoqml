@@ -18,7 +18,7 @@ On Windows installations of OSGeo4W the folder should be in:
 *C:\OSGeo4W\apps\qgis-ltr\python\plugins* if you are using a 32bit OS   
   
 
-If  the installation method fails for you, you can use the [qlyrx.zip](./plugin/qlyrx/qlyrx.zip) file and use the **install from zip** method within the QGIS plugin manager.  
+If  the installation method fails for you, you can use the [qlyrx.zip](./plugin/qlyrx/qlyrx.zip) file and use the [**install from zip**]: https://docs.qgis.org/testing/en/docs/user_manual/plugins/plugins.html#the-install-from-zip-tab method within the QGIS plugin manager.  
 
 ### Functionality
 - The plugin currently supports lyrx files with:  
