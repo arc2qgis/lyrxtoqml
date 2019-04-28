@@ -39,9 +39,9 @@ If  the installation method fails for you, download the [qlyrx.zip](./plugin/qly
 				[Esri predefined shapes uses 'paths' WIP]  
 - Known issues:  
    - QGIS does not offer support for grouping categories  
-   - SVG fill is generated as black and white image  
-   - Rendering paths shape arrays to QGIS shapes  
-   - Some lyrx symbology uses Esri's fonts, without it, QGIS will fall back to a default font  
+   - SVG base64 image fill is generated as black and white image  
+   - Converting CIMVectorMarker from shape paths arrays to QGIS shapes is a customized tweak
+   - Some lyrx symbology uses Esri's or extrnal **fonts**, without it, QGIS will fall back to a default font  
 - Next:  
    - Graduated symbology support  
    - Labels support  
