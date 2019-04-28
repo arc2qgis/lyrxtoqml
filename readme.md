@@ -15,17 +15,17 @@ This plugin currently supports lyrx files with:
 	- Unique Values symbologies (1/2 fields classification)  
 	- Simple renderers  
 	- Esri/Qgis main conversions:  
-		- CIMSolidFill  
-		- CIMSolidStroke (=> QgsSimpleLineSymbolLayer or simple stroke)  
-		- CIMHatchFill => QgsLinePatternFillSymbolLayer  
-		- CIMCharacterMarker => QgsFontMarkerSymbolLayer w QgsPointPatternFillSymbolLayer or QgsMarkerLineSymbolLayer  
-		- CIMGeometricEffectDashes => setCustomDashVector  
-		- CIMPictureFill - creates svg from base64 image string  
-		- CIMVectorMarker  
-			- CIMCharacterMarker collection  
-			or  
-			- Use predefined shapes QgsSimpleMarkerSymbolLayer w QgsMarkerLineSymbolLayer  
-			[Esri predefined shapes uses 'paths' WIP]  
+			- CIMSolidFill  
+			- CIMSolidStroke (=> QgsSimpleLineSymbolLayer or simple stroke)  
+			- CIMHatchFill => QgsLinePatternFillSymbolLayer  
+			- CIMCharacterMarker => QgsFontMarkerSymbolLayer w QgsPointPatternFillSymbolLayer or QgsMarkerLineSymbolLayer  
+			- CIMGeometricEffectDashes => setCustomDashVector  
+			- CIMPictureFill - creates svg from base64 image string  
+			- CIMVectorMarker  
+				- CIMCharacterMarker collection  
+					or  
+				- Use predefined shapes QgsSimpleMarkerSymbolLayer w QgsMarkerLineSymbolLayer  
+				[Esri predefined shapes uses 'paths' WIP]  
 - Known issues 
 	- QGIS does not offer support for grouping categories
 	- SVG fill is generated as black and white image
