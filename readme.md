@@ -24,7 +24,7 @@ If  the installation method fails for you, you can use the [qlyrx.zip](./plugin/
 This plugin currently supports lyrx files with:  
    - Unique Values symbologies (1 or 2 fields classification) => QGIS Categorized 
    - Simple renderers  
-   Esri/Qgis main conversions:  
+   *Esri/Qgis main conversions:  
     - CIMSolidFill  
     - CIMSolidStroke (=> QgsSimpleLineSymbolLayer or simple stroke)  
     - CIMHatchFill => QgsLinePatternFillSymbolLayer  
@@ -36,12 +36,12 @@ This plugin currently supports lyrx files with:
 					or  
       - Use predefined shapes QgsSimpleMarkerSymbolLayer w QgsMarkerLineSymbolLayer  
 				[Esri predefined shapes uses 'paths' WIP]  
-   Known issues:  
+   *Known issues:  
    - QGIS does not offer support for grouping categories  
    - SVG fill is generated as black and white image
    - Rendering paths shape arrays to QGIS shapes  
    - Some lyrx symbology uses Esri's fonts, without it, QGIS will fall back to a default font  
-   Next:
+   *Next:
    - Graduated symbology support
    - Labels support	
   
