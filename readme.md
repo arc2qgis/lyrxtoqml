@@ -12,16 +12,16 @@ Tested on Ubuntu 18.04 as well.
 To use the working version of the plugin simply extract the `plugin/qlyrx` folder into your `qgis/python/plugins` folder.
 
 This plugin currently supports lyrx files with:  
-	- Unique Values symbologies (1/2 fields classification)  
-	- Simple renderers  
-	- Esri/Qgis main conversions:  
-   - CIMSolidFill  
-   - CIMSolidStroke (=> QgsSimpleLineSymbolLayer or simple stroke)  
-   - CIMHatchFill => QgsLinePatternFillSymbolLayer  
-   - CIMCharacterMarker => QgsFontMarkerSymbolLayer w QgsPointPatternFillSymbolLayer or QgsMarkerLineSymbolLayer  
-   - CIMGeometricEffectDashes => setCustomDashVector  
-   - CIMPictureFill - creates svg from base64 image string  
-   - CIMVectorMarker  
+   - Unique Values symbologies (1/2 fields classification)  
+   - Simple renderers  
+   - Esri/Qgis main conversions:  
+    - CIMSolidFill  
+    - CIMSolidStroke (=> QgsSimpleLineSymbolLayer or simple stroke)  
+    - CIMHatchFill => QgsLinePatternFillSymbolLayer  
+    - CIMCharacterMarker => QgsFontMarkerSymbolLayer w QgsPointPatternFillSymbolLayer or QgsMarkerLineSymbolLayer  
+    - CIMGeometricEffectDashes => setCustomDashVector  
+    - CIMPictureFill - creates svg from base64 image string  
+    - CIMVectorMarker  
       - CIMCharacterMarker collection  
 					or  
       - Use predefined shapes QgsSimpleMarkerSymbolLayer w QgsMarkerLineSymbolLayer  
