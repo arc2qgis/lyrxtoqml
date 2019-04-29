@@ -57,4 +57,4 @@ Save your styles, after creating the new symbology with the plugin as qgis nativ
 To use the plugin select a *.lyrx* file and the layer it should style.
 
 
-This plugin is provided under the [*MIT License*](LICENSE)
+This plugin is provided under the [*GPL2 License*](LICENSE)
