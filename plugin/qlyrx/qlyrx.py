@@ -359,6 +359,24 @@ class qlyrx:
         geometry_general_type_str = geometry_general_type_str.replace('string', '')
         return geometry_general_type_str
 
+    def parseRasterData(self, obj):
+        #print(obj['colorizer'])
+        colorizer = obj['colorizer']
+        if 'Classify' in colorizer['type']:
+            #print('classify')
+            self.parseRasterClassBreaks(colorizer)            
+        elif 'Unique' in colorizer['type']:
+            #print('unique')
+            self.parseRasterGroups(colorizer)
+            
+            
+    def parseRasterGroups(self, obj):
+        groups = obj['groups']
+        #print(groups)
+        
+    def parseRasterClassBreaks(self, obj):
+        classBreaks = obj['classBreaks']
+        #print(classBreaks)
 
     def parseSolidFill(self, obj, layer):
         symbol = ""
@@ -919,18 +937,26 @@ class qlyrx:
 
     def apply_lyrx_symbols(self, layer, lyrx_data, geometry_general_type_str):
         simple_symbol = False
+        raster_symbol = False
         layerDef = lyrx_data['layerDefinitions']
         renderer = ''
         renderers = [];
         renderers_symb_type = []
         dataset_names = []
+        raster_data = ''
 
         for p in layerDef :
+            #print(p)
+            if 'type' in p:
+               print(p['type'])
+               if p['type'] == 'CIMRasterLayer':
+                   raster_symbol = True
+                   raster_data = p
             ## Check for renderers
             temp_renderer = p['renderer'] if 'renderer' in p else ''
             renderers.append(temp_renderer)
             ## Get lyrx shape type and original names
-            if not temp_renderer == '':
+            if not temp_renderer == '' and not raster_symbol:
                 rend_type = temp_renderer['symbol']['type'] if 'symbol' in temp_renderer else  temp_renderer['defaultSymbol']['symbol']['type']
                 renderers_symb_type.append(rend_type.lower())
                 dataset = p['featureTable']['dataConnection']['dataset']
@@ -957,7 +983,7 @@ class qlyrx:
                 rend_idx = z
         
         # Check simple symbol        
-        if rend_idx < 0:
+        if rend_idx < 0 and not raster_symbol:
             active_name = layer.sourceName()
             rend_idx = dataset_names.index(active_name)
             simple_symbol = True
@@ -1161,13 +1187,16 @@ class qlyrx:
             renderer = QgsCategorizedSymbolRenderer("concat(" + class_field + concat_str, categories)
             #print(categories)
             
-        elif renderers[rend_idx]['type'] == 'CIMSimpleRenderer' and simple_symbol:
+        elif not raster_symbol and renderers[rend_idx]['type'] == 'CIMSimpleRenderer' and simple_symbol:
             single_symbology = self.parseSimpleRenderer(renderers[rend_idx])
             if not single_symbology == '':
                 #print('simple renderer')
                 symbol = QgsSymbol.defaultSymbol(layer.geometryType())
                 symbol.changeSymbolLayer(0, single_symbology)
                 renderer = QgsSingleSymbolRenderer(symbol)
+        elif raster_symbol:
+            print("raster")
+            self.parseRasterData(raster_data)
         else:
             print("No matching lyrx symbology fields found for the active layer")
             # add user interaction
@@ -1199,11 +1228,13 @@ class qlyrx:
             j_data = self.read_lyrx(self.dlg.file_select.filePath())
             
             layer = self.dlg.layer_select.currentLayer()
-            #print(layer)
+            #print(dir(layer))
+            #print(layer.__class__.__name__)
             #print(point2mm)
-            fields = layer.fields()
-            
-            geometry_general_type_str = self.generalise_geom_type(layer)
+            #fields = layer.fields() if layer.fields() else ''
+            fields = layer.fields() if "fields" in dir(layer) else ''            
+            isRaster = 'Raster' in layer.__class__.__name__ 
+            geometry_general_type_str = self.generalise_geom_type(layer) if not isRaster else 'raster'
             
             self.apply_lyrx_symbols(layer, j_data, geometry_general_type_str)
             #pass
