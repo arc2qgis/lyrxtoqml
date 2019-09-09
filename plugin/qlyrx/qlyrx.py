@@ -26,6 +26,7 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from qgis.core import *
+from qgis.utils import *
 import json
 import re
 import qgis.utils
@@ -359,24 +360,106 @@ class qlyrx:
         geometry_general_type_str = geometry_general_type_str.replace('string', '')
         return geometry_general_type_str
 
-    def parseRasterData(self, obj):
+    def parseRasterData(self, obj, layer):
         #print(obj['colorizer'])
         colorizer = obj['colorizer']
+        renderer = ''
         if 'Classify' in colorizer['type']:
-            #print('classify')
-            self.parseRasterClassBreaks(colorizer)            
+            print('classify')
+            self.parseRasterClassBreaks(colorizer, layer)
+            print("after parse rend")
         elif 'Unique' in colorizer['type']:
-            #print('unique')
-            self.parseRasterGroups(colorizer)
-            
-            
-    def parseRasterGroups(self, obj):
-        groups = obj['groups']
-        #print(groups)
+            print('unique')
+            self.parseRasterGroups(colorizer, layer)
+            print("after parse")
         
-    def parseRasterClassBreaks(self, obj):
+        #return renderer
+        #return ''
+            
+    def parseRasterGroups(self, obj, layer):
+        groups = obj['groups']
+        print(groups)
+        renderer = ''
+        #pcRenderer = QgsSingleBandPseudoColorRenderer()
+        #return renderer
+        
+    def parseRasterClassBreaks(self, obj, layer):
         classBreaks = obj['classBreaks']
-        #print(classBreaks)
+        print(classBreaks)
+        col_array = []
+        val_array = []
+        rampArray = []
+        max = layer.renderer().classificationMax()
+        min = layer.renderer().classificationMin()
+        #val_array(min)
+        initMin = False
+        for cb in classBreaks:            
+            #col = 
+            color = self.colorToRgbArray(cb['color']['values'], cb['color']['type'])
+            col_array.append(color)
+            val = cb['upperBound'] if 'upperBound' in cb else 0
+            val_array.append(val)
+            if not initMin:
+                rampArray.append(QgsColorRampShader.ColorRampItem(min, color, str(min) + " - " + str(val)))
+                initMin = True
+            if len(val_array) > 1:    
+                rampArray.append(QgsColorRampShader.ColorRampItem(val, color, str(val_array[len(val_array) - 2]) + " - " + str(val)))
+            
+        print(rampArray)
+        #renderer = ''
+        try:
+           
+            mid = (max - min)/2
+            print(max)
+            print(min)
+            p_renderer = layer.renderer().clone()
+            #print(p_renderer)
+            #print(p_renderer.shader())
+            #print(p_renderer.shader().rasterShaderFunction())
+            #print(p_renderer.shader().rasterShaderFunction().colorRampItemList())
+            print(p_renderer.shader().rasterShaderFunction().classificationMode())
+            print(p_renderer.shader().rasterShaderFunction().colorRampType())
+            print(p_renderer.shader().rasterShaderFunction().colorRampTypeAsQString())
+            #print(p_renderer.shader().rasterShaderFunction().sourceColorRamp())
+            #print(dir(p_renderer.shader().rasterShaderFunction().sourceColorRamp()))
+            list = p_renderer.shader().rasterShaderFunction().colorRampItemList()            
+            for l in list:
+                print(l)
+            
+            
+            
+            fcn = QgsColorRampShader()
+            #fcn.setColorRampType(QgsColorRampShader.Interpolated)
+            #fcn.setClassificationMode(QgsColorRampShader.Quantile)
+            lst = rampArray
+            #[ QgsColorRampShader.ColorRampItem(min, QColor(0,255,0)),
+            #QgsColorRampShader.ColorRampItem(mid, QColor(0,0,255)),
+            #QgsColorRampShader.ColorRampItem(max, QColor(255,0,0))]
+            #QgsColorRampShader.ColorRampItem(mid, QColor(0,0,255)),
+            #fcn.
+            fcn.setColorRampItemList(lst)
+            fcn.setColorRampType(QgsColorRampShader.Interpolated)
+            print(fcn)
+            #try:
+            #    fcn.classifyColorRampV2(layer.band())
+            #except:
+            #    print("err")
+            #print(fcn)
+            shader = QgsRasterShader()
+            shader.setRasterShaderFunction(fcn)
+            fcn.setColorRampType(QgsColorRampShader.Discrete)
+            print("after shade")
+            renderer = QgsSingleBandPseudoColorRenderer(layer.dataProvider(), 1, shader)
+            layer.setRenderer(renderer)
+            print("after rend")            
+            layer.triggerRepaint()
+            print("after repaint")
+            qgis.utils.iface.layerTreeView().refreshLayerSymbology(layer.id())
+            #iface.legendInterface().refreshLayerSymbology(layer)
+        except Exception as e:                                
+            print(e)
+            
+        #return ''
 
     def parseSolidFill(self, obj, layer):
         symbol = ""
@@ -1196,7 +1279,10 @@ class qlyrx:
                 renderer = QgsSingleSymbolRenderer(symbol)
         elif raster_symbol:
             print("raster")
-            self.parseRasterData(raster_data)
+            self.parseRasterData(raster_data, layer)
+            print("after parse all")
+            #layer.triggerRepaint()
+            #self.iface.legendInterface().refreshLayerSymbology(layer)
         else:
             print("No matching lyrx symbology fields found for the active layer")
             # add user interaction
