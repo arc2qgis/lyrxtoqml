@@ -387,23 +387,24 @@ class qlyrx:
         classBreaks = obj['classBreaks']
         print(classBreaks)
         col_array = []
+        cust_array = []
         val_array = []
         rampArray = []
+        #n1 = max = layer.renderer().shader().classificationMax()
         max = layer.renderer().classificationMax()
-        min = layer.renderer().classificationMin()
-        #val_array(min)
+        min = layer.renderer().classificationMin()        
         initMin = False
-        for cb in classBreaks:            
-            #col = 
+        for cb in classBreaks:
             color = self.colorToRgbArray(cb['color']['values'], cb['color']['type'])
             col_array.append(color)
             val = cb['upperBound'] if 'upperBound' in cb else 0
             val_array.append(val)
+            print(str(val))
             if not initMin:
-                rampArray.append(QgsColorRampShader.ColorRampItem(min, color, str(min) + " - " + str(val)))
+                rampArray.append(QgsColorRampShader.ColorRampItem(val, color, str(min) + " - " + str(val)))
                 initMin = True
             if len(val_array) > 1:    
-                rampArray.append(QgsColorRampShader.ColorRampItem(val, color, str(val_array[len(val_array) - 2]) + " - " + str(val)))
+                rampArray.append(QgsColorRampShader.ColorRampItem(val, color, str(val_array[len(val_array) - 2]) + " - " + str(val)))            
             
         print(rampArray)
         #renderer = ''
@@ -413,49 +414,38 @@ class qlyrx:
             print(max)
             print(min)
             p_renderer = layer.renderer().clone()
-            #print(p_renderer)
-            #print(p_renderer.shader())
-            #print(p_renderer.shader().rasterShaderFunction())
-            #print(p_renderer.shader().rasterShaderFunction().colorRampItemList())
-            print(p_renderer.shader().rasterShaderFunction().classificationMode())
-            print(p_renderer.shader().rasterShaderFunction().colorRampType())
-            print(p_renderer.shader().rasterShaderFunction().colorRampTypeAsQString())
-            #print(p_renderer.shader().rasterShaderFunction().sourceColorRamp())
-            #print(dir(p_renderer.shader().rasterShaderFunction().sourceColorRamp()))
-            list = p_renderer.shader().rasterShaderFunction().colorRampItemList()            
-            for l in list:
-                print(l)
             
+            #list = p_renderer.shader().rasterShaderFunction().colorRampItemList()            
+            #for l in list:
+            #    print(l)
+            print(col_array)
+            cRamp = QgsPresetSchemeColorRamp(col_array)
+            print(cRamp)            
             
+            fcn = QgsColorRampShader()            
+            fcn.setColorRampType(QgsColorRampShader.Discrete)            
+            fcn.setColorRampItemList(rampArray)
+            print("type is " + str(fcn.colorRampType()))
             
-            fcn = QgsColorRampShader()
-            #fcn.setColorRampType(QgsColorRampShader.Interpolated)
-            #fcn.setClassificationMode(QgsColorRampShader.Quantile)
-            lst = rampArray
-            #[ QgsColorRampShader.ColorRampItem(min, QColor(0,255,0)),
-            #QgsColorRampShader.ColorRampItem(mid, QColor(0,0,255)),
-            #QgsColorRampShader.ColorRampItem(max, QColor(255,0,0))]
-            #QgsColorRampShader.ColorRampItem(mid, QColor(0,0,255)),
-            #fcn.
-            fcn.setColorRampItemList(lst)
-            fcn.setColorRampType(QgsColorRampShader.Interpolated)
-            print(fcn)
-            #try:
-            #    fcn.classifyColorRampV2(layer.band())
-            #except:
-            #    print("err")
-            #print(fcn)
+            fcn.setSourceColorRamp(cRamp)
+            #fcn.setColorRampType(QgsColorRampShader.Discrete)
+            
             shader = QgsRasterShader()
             shader.setRasterShaderFunction(fcn)
-            fcn.setColorRampType(QgsColorRampShader.Discrete)
-            print("after shade")
-            renderer = QgsSingleBandPseudoColorRenderer(layer.dataProvider(), 1, shader)
-            layer.setRenderer(renderer)
+            #fcn.setColorRampType(QgsColorRampShader.Discrete)
+            print("after shade")            
+            #shader.rasterShaderFunction().setSourceColorRamp(cRamp)
+            print(shader)
+            renderer = QgsSingleBandPseudoColorRenderer(layer.dataProvider(), layer.type(), shader)            
+            layer.setRenderer(renderer)            
             print("after rend")            
             layer.triggerRepaint()
-            print("after repaint")
-            qgis.utils.iface.layerTreeView().refreshLayerSymbology(layer.id())
+            print("after repaint")            
+            
+            #qgis.utils.iface.layerTreeView().refreshLayerSymbology(layer.id())
             #iface.legendInterface().refreshLayerSymbology(layer)
+            
+            
         except Exception as e:                                
             print(e)
             
