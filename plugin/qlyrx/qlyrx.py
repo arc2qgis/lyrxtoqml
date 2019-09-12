@@ -120,6 +120,7 @@ class qlyrx:
         """
         # Save reference to the QGIS interface
         self.iface = iface
+        self.mb = self.iface.messageBar()
         # initialize plugin directory
         self.plugin_dir = os.path.dirname(__file__)
         # initialize locale
@@ -1259,12 +1260,14 @@ class qlyrx:
                 renderer = QgsSingleSymbolRenderer(symbol)
         elif raster_symbol:
             print("raster")
+            self.mb.pushWarning('Warning',"Raster symbology is still experimental")
             self.parseRasterData(raster_data, layer)
             print("after parse all")
             #layer.triggerRepaint()
             #self.iface.legendInterface().refreshLayerSymbology(layer)
         else:
             print("No matching lyrx symbology fields found for the active layer")
+            self.mb.pushCritical('',"No matching lyrx symbology fields found for the active layer")
             # add user interaction
 
         # assign the created renderer to the layer
@@ -1303,4 +1306,5 @@ class qlyrx:
             geometry_general_type_str = self.generalise_geom_type(layer) if not isRaster else 'raster'
             
             self.apply_lyrx_symbols(layer, j_data, geometry_general_type_str)
+            self.mb.pushSuccess('Yay',"It's Working")
             #pass
