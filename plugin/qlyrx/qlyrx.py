@@ -666,7 +666,8 @@ class qlyrx:
                     
                 #print(full_symbol_layer.__class__.__name__)
                 layers.append(full_symbol_layer)
-                layers_obj[ls['sl_idx']] = full_symbol_layer
+                if 'sl_idx' in ls:
+                    layers_obj[ls['sl_idx']] = full_symbol_layer
                 
                 if i == 0:
                     prev_hatch = fill_width
@@ -738,16 +739,22 @@ class qlyrx:
                     #print("After simple vector")
         print(layer.geometryType())
         if layer.geometryType() == 2:            
-            solid_array = self.parseSolidFill({"desc": [symb_def]}, layer)            
-            lines_ret = self.parseLineFill({"desc": [symb_def]}, layer)                
-            if not lines_ret == '':
-                line_ret = lines_ret[0]
-                #print("hatch number is " + str(len(line_ret)))
-                for line in line_ret:
-                    try:
-                        solid_array[0].appendSymbolLayer(line)
-                    except:
-                        print(line.__class__.__name__)
+            print(obj['symbol']['symbol']['symbolLayers'])
+            print(symb_def)
+            solid_array = self.parseSolidFill({"desc": [symb_def]}, layer)
+            
+            for sl in obj['symbol']['symbol']['symbolLayers']:                        
+                lines_ret = self.parseLineFill({'desc': [sl]} , layer)                
+                print(lines_ret)
+                if not lines_ret == '':
+                    line_ret = lines_ret[0]
+                    print("hatch number is " + str(len(line_ret)))
+                    for line in line_ret:
+                        try:
+                            print("append layer")
+                            solid_array[0].appendSymbolLayer(line)
+                        except:
+                            print(line.__class__.__name__)
             
             stroke = self.parseStroke({"desc": [symb_def], "sl_idx": 0}, solid_array[0], layer)
             
@@ -1107,6 +1114,7 @@ class qlyrx:
             ## Convert the symbolLayers definition of each CIMUniqueValueClass to qgis symbol and create a category
             idx = 0
             for sl in symbol_layers:
+                print(sl)
                 #print ("val :" + str(symbol_values[idx][0]))
                 allSymbolLayers = {}                                    
                 ## Create definition array - add order and more    
