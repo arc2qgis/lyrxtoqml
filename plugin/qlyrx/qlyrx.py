@@ -716,13 +716,14 @@ class qlyrx:
         return new_color
 
 
-    def parseSimpleRenderer(self, obj):
+    def parseSimpleRenderer(self, obj, layer):
     
         symbol = ''
         symb_def = obj['symbol']['symbol']['symbolLayers'][0]
         
         if 'characterIndex' in symb_def and symb_def['type'] == 'CIMCharacterMarker':
-            symbol = parseCharacterFill(symb_def, 0, layer)
+            symbol_ret = self.parseCharacterFill(symb_def, 0, layer)
+            symbol = symbol_ret[0]
         
         if  symb_def['type'] == 'CIMVectorMarker':
             vector_layers = self.parseVectorSymbolLine(symb_def, True, layer)
@@ -1048,6 +1049,7 @@ class qlyrx:
         
         # Check simple symbol        
         if rend_idx < 0 and not raster_symbol:
+            print(renderers)
             active_name = layer.sourceName()
             rend_idx = dataset_names.index(active_name)
             simple_symbol = True
@@ -1252,7 +1254,7 @@ class qlyrx:
             #print(categories)
             
         elif not raster_symbol and renderers[rend_idx]['type'] == 'CIMSimpleRenderer' and simple_symbol:
-            single_symbology = self.parseSimpleRenderer(renderers[rend_idx])
+            single_symbology = self.parseSimpleRenderer(renderers[rend_idx], layer)
             if not single_symbology == '':
                 #print('simple renderer')
                 symbol = QgsSymbol.defaultSymbol(layer.geometryType())
