@@ -503,7 +503,7 @@ class qlyrx:
                 stroke_width = ls['width']*point2mm                         
                 cap = self.parseLineCap(ls)                                
                 join = self.parseLineJoin(ls)
-                stroke_order = ls['sl_idx']
+                stroke_order = ls['sl_idx'] if 'sl_idx' in ls else 0
                 if  i == 0 and  dp == '' and not geometry_general_type_str == 'line':
                     #Change the first symbol layer stroke by layer type            
                     symb.symbolLayer(0).setStrokeColor(new_color)
@@ -736,7 +736,28 @@ class qlyrx:
                     #allSymbolLayers[v_ord] = v_symb
                     symbol = v_symb
                     #print("After simple vector")
-    
+        print(layer.geometryType())
+        if layer.geometryType() == 2:            
+            solid_array = self.parseSolidFill({"desc": [symb_def]}, layer)            
+            lines_ret = self.parseLineFill({"desc": [symb_def]}, layer)                
+            if not lines_ret == '':
+                line_ret = lines_ret[0]
+                #print("hatch number is " + str(len(line_ret)))
+                for line in line_ret:
+                    try:
+                        solid_array[0].appendSymbolLayer(line)
+                    except:
+                        print(line.__class__.__name__)
+            
+            stroke = self.parseStroke({"desc": [symb_def], "sl_idx": 0}, solid_array[0], layer)
+            
+            if(stroke):
+                symbol = stroke[0]
+                symbol.appendSymbolLayer(stroke[1][0])
+                
+            
+            
+            
         return symbol
 
 
@@ -1049,7 +1070,6 @@ class qlyrx:
         
         # Check simple symbol        
         if rend_idx < 0 and not raster_symbol:
-            print(renderers)
             active_name = layer.sourceName()
             rend_idx = dataset_names.index(active_name)
             simple_symbol = True
@@ -1255,10 +1275,15 @@ class qlyrx:
             
         elif not raster_symbol and renderers[rend_idx]['type'] == 'CIMSimpleRenderer' and simple_symbol:
             single_symbology = self.parseSimpleRenderer(renderers[rend_idx], layer)
+            print(single_symbology)
             if not single_symbology == '':
                 #print('simple renderer')
                 symbol = QgsSymbol.defaultSymbol(layer.geometryType())
-                symbol.changeSymbolLayer(0, single_symbology)
+                try:
+                    symbol.changeSymbolLayer(0, single_symbology)
+                except:
+                    symbol = single_symbology
+                    
                 renderer = QgsSingleSymbolRenderer(symbol)
         elif raster_symbol:
             print("raster")
