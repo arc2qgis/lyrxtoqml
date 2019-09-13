@@ -1,0 +1,191 @@
+{
+  "type" : "CIMLayerDocument",
+  "version" : "2.4.0",
+  "build" : 19948,
+  "layers" : [
+    "CIMPATH=c__temp_raster.xml"
+  ],
+  "layerDefinitions" : [
+    {
+      "type" : "CIMRasterLayer",
+      "name" : "C:\\Temp\\RASTER",
+      "uRI" : "CIMPATH=c__temp_raster.xml",
+      "useSourceMetadata" : true,
+      "description" : "C:\\Temp\\RASTER",
+      "layerType" : "Operational",
+      "showLegends" : true,
+      "visibility" : true,
+      "displayCacheType" : "Permanent",
+      "maxDisplayCacheAge" : 5,
+      "showPopups" : true,
+      "serviceLayerID" : -1,
+      "refreshRate" : -1,
+      "refreshRateUnit" : "esriTimeUnitsSeconds",
+      "dataConnection" : {
+        "type" : "CIMNetCDFRasterDataConnection",
+        "workspaceConnectionString" : "DATABASE=C:\\Temp\\new2.nc",
+        "workspaceFactory" : "NetCDF",
+        "dataset" : "C:\\Temp\\RASTER",
+        "datasetType" : "esriDTRasterDataset",
+        "variable" : "BASIC_COUNTS_MK_BINS",
+        "xDimension" : "x",
+        "yDimension" : "y"
+      },
+      "colorizer" : {
+        "type" : "CIMRasterUniqueValueColorizer",
+        "resamplingType" : "NearestNeighbor",
+        "noDataColor" : {
+          "type" : "CIMRGBColor",
+          "values" : [
+            255,
+            255,
+            255,
+            0
+          ]
+        },
+        "defaultColor" : {
+          "type" : "CIMRGBColor",
+          "values" : [
+            36,
+            178,
+            199,
+            100
+          ]
+        },
+        "fieldName" : "Value",
+        "groups" : [
+          {
+            "type" : "CIMRasterUniqueValueGroup",
+            "classes" : [
+              {
+                "type" : "CIMRasterUniqueValueClass",
+                "values" : [
+                  "-3"
+                ],
+                "label" : "< -2.58",
+                "color" : {
+                  "type" : "CIMRGBColor",
+                  "values" : [
+                    69,
+                    117,
+                    181,
+                    100
+                  ]
+                }
+              },
+              {
+                "type" : "CIMRasterUniqueValueClass",
+                "values" : [
+                  "-2"
+                ],
+                "label" : "-2.58 - -1.96",
+                "color" : {
+                  "type" : "CIMRGBColor",
+                  "values" : [
+                    132,
+                    158,
+                    186,
+                    100
+                  ]
+                }
+              },
+              {
+                "type" : "CIMRasterUniqueValueClass",
+                "values" : [
+                  "-1"
+                ],
+                "label" : "-1.96 - -1.65",
+                "color" : {
+                  "type" : "CIMRGBColor",
+                  "values" : [
+                    192,
+                    204,
+                    190,
+                    100
+                  ]
+                }
+              },
+              {
+                "type" : "CIMRasterUniqueValueClass",
+                "values" : [
+                  "0"
+                ],
+                "label" : "-1.65 - 1.65",
+                "color" : {
+                  "type" : "CIMRGBColor",
+                  "values" : [
+                    255,
+                    255,
+                    191,
+                    100
+                  ]
+                }
+              },
+              {
+                "type" : "CIMRasterUniqueValueClass",
+                "values" : [
+                  "1"
+                ],
+                "label" : "1.65 - 1.96",
+                "color" : {
+                  "type" : "CIMRGBColor",
+                  "values" : [
+                    250,
+                    185,
+                    132,
+                    100
+                  ]
+                }
+              },
+              {
+                "type" : "CIMRasterUniqueValueClass",
+                "values" : [
+                  "2"
+                ],
+                "label" : "1.96 - 2.58",
+                "color" : {
+                  "type" : "CIMRGBColor",
+                  "values" : [
+                    237,
+                    117,
+                    81,
+                    100
+                  ]
+                }
+              },
+              {
+                "type" : "CIMRasterUniqueValueClass",
+                "values" : [
+                  "3"
+                ],
+                "label" : "> 2.58",
+                "color" : {
+                  "type" : "CIMRGBColor",
+                  "values" : [
+                    214,
+                    47,
+                    39,
+                    100
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "attributeTable" : {
+        "type" : "CIMRasterTable",
+        "editable" : true
+      },
+      "timeDisplayDefinition" : {
+        "type" : "CIMTimeDisplayDefinition",
+        "timeInterval" : 0,
+        "timeIntervalUnits" : "esriTimeUnitsHours",
+        "timeOffsetUnits" : "esriTimeUnitsYears"
+      },
+      "timeDefinition" : {
+        "type" : "CIMTimeDataDefinition"
+      }
+    }
+  ]
+}

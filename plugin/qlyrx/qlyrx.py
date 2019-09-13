@@ -378,46 +378,73 @@ class qlyrx:
         #return ''
             
     def parseRasterGroups(self, obj, layer):
-        groups = obj['groups']
-        print(groups)
+        groups = obj['groups']        
         renderer = ''
-        #pcRenderer = QgsSingleBandPseudoColorRenderer()
-        #return renderer
+        col_array = []        
+        val_array = []
+        rampArray = []
+        stats = self.getRasterLayerStats(layer)
+        print(stats)
+        min= stats.minimumValue
+        max = stats.maximumValue
+        initMin = False        
+        classes = groups[0]['classes']
+        
+        for gr in classes:            
+            color = self.colorToRgbArray(gr['color']['values'], gr['color']['type'])
+            label = gr['label']            
+            col_array.append(color)
+            vals = gr['values'] if 'values' in gr else []
+            val_arr = []
+            for gr_val in vals:
+                val_arr.append(float(gr_val))
+                rampArray.append(QgsColorRampShader.ColorRampItem(float(gr_val), color,label ))
+        
+        try:
+            fcn = QgsColorRampShader()            
+            fcn.setColorRampType(QgsColorRampShader.Exact)            
+            fcn.setColorRampItemList(rampArray)                        
+            cRamp = QgsPresetSchemeColorRamp(col_array)            
+            fcn.setSourceColorRamp(cRamp)            
+            
+            shader = QgsRasterShader()
+            shader.setRasterShaderFunction(fcn)
+            
+            renderer = QgsSingleBandPseudoColorRenderer(layer.dataProvider(), layer.type(), shader)                
+            layer.setRenderer(renderer)            
+            layer.renderer().setClassificationMin(min)
+            layer.renderer().setClassificationMax(max)
+            layer.renderer().shader().rasterShaderFunction().setColorRampItemList(rampArray)            
+            layer.triggerRepaint()
+            print("after raster repaint")            
+                        
+        except Exception as e:                                
+            print(e)
+                
         
     def parseRasterClassBreaks(self, obj, layer):
         classBreaks = obj['classBreaks']
         print(classBreaks)
-        col_array = []
-        cust_array = []
+        col_array = []        
         val_array = []
         rampArray = []
-
-        rend = layer.renderer()
-        provider = layer.dataProvider()
-        ver = provider.hasStatistics(1, QgsRasterBandStats.All)
-        stats = provider.bandStatistics(1, QgsRasterBandStats.All,layer.extent(), 0)
-        if ver is not False:
-            print("minimumValue = ", stats.minimumValue)
-            print("maximumValue = ", stats.maximumValue)
-
+        stats = self.getRasterLayerStats(layer)
         min= stats.minimumValue
-        max = stats.maximumValue        
-        
+        max = stats.maximumValue                
         initMin = False
         for cb in classBreaks:
             color = self.colorToRgbArray(cb['color']['values'], cb['color']['type'])
             col_array.append(color)
             val = cb['upperBound'] if 'upperBound' in cb else 0
             val_array.append(val)
+            label = cb['label']
             #print(str(val))
             if not initMin:
-                rampArray.append(QgsColorRampShader.ColorRampItem(val, color, str(min) + " - " + str(val)))
+                rampArray.append(QgsColorRampShader.ColorRampItem(val, color, label))
                 initMin = True
             if len(val_array) > 1:    
-                rampArray.append(QgsColorRampShader.ColorRampItem(val, color, str(val_array[len(val_array) - 2]) + " - " + str(val)))            
-            
-        #print(rampArray)
-        #renderer = ''
+                rampArray.append(QgsColorRampShader.ColorRampItem(val, color, label))            
+        
         try:                                
             
             fcn = QgsColorRampShader()            
@@ -442,6 +469,16 @@ class qlyrx:
             
         #return ''
 
+    def getRasterLayerStats(self, layer):
+        rend = layer.renderer()
+        provider = layer.dataProvider()
+        ver = provider.hasStatistics(1, QgsRasterBandStats.All)
+        stats = provider.bandStatistics(1, QgsRasterBandStats.All,layer.extent(), 0)
+        if ver is not False:
+            print("minimumValue = ", stats.minimumValue)
+            print("maximumValue = ", stats.maximumValue)
+        return(stats)
+        
     def parseSolidFill(self, obj, layer):
         symbol = ""
         i = 0
