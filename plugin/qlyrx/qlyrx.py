@@ -1441,6 +1441,9 @@ class qlyrx:
         
         if not labels == '':
             layer.setLabeling(labels)
+            #print(dir(self.dlg))
+            if not self.dlg.parseLables.isChecked():
+                layer.setLabelsEnabled(False) 
             layer.triggerRepaint()
             print("after labeling")
 
