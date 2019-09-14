@@ -492,7 +492,7 @@ class qlyrx:
                 ### TODO add lock
                 #print("solid index " + str(ls['sl_idx']))
                 #symbol.setStrokeColor(new_color)     
-                solid_index = ls['sl_idx']
+                solid_index = ls['sl_idx'] if 'sl_idx' in ls else 0
                 i = i + 1
         if i > 1:
             print("Extra " + str(i) + " solid fills")
@@ -779,7 +779,8 @@ class qlyrx:
             print(obj['symbol']['symbol']['symbolLayers'])
             print(symb_def)
             solid_array = self.parseSolidFill({"desc": [symb_def]}, layer)
-            
+            print(solid_array)
+            symbol = solid_array[0]
             for sl in obj['symbol']['symbol']['symbolLayers']:                        
                 lines_ret = self.parseLineFill({'desc': [sl]} , layer)                
                 print(lines_ret)
@@ -797,7 +798,8 @@ class qlyrx:
             
             if(stroke):
                 symbol = stroke[0]
-                symbol.appendSymbolLayer(stroke[1][0])
+                if len(stroke[1]):
+                    symbol.appendSymbolLayer(stroke[1][0])
                 
             
             
