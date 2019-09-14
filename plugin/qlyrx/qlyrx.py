@@ -424,7 +424,7 @@ class qlyrx:
         
     def parseRasterClassBreaks(self, obj, layer):
         classBreaks = obj['classBreaks']
-        print(classBreaks)
+        #print(classBreaks)
         col_array = []        
         val_array = []
         rampArray = []
@@ -776,14 +776,14 @@ class qlyrx:
                     #print("After simple vector")
         print(layer.geometryType())
         if layer.geometryType() == 2:            
-            print(obj['symbol']['symbol']['symbolLayers'])
-            print(symb_def)
+            #print(obj['symbol']['symbol']['symbolLayers'])
+            #print(symb_def)
             solid_array = self.parseSolidFill({"desc": [symb_def]}, layer)
-            print(solid_array)
+            #print(solid_array)
             symbol = solid_array[0]
             for sl in obj['symbol']['symbol']['symbolLayers']:                        
                 lines_ret = self.parseLineFill({'desc': [sl]} , layer)                
-                print(lines_ret)
+                #print(lines_ret)
                 if not lines_ret == '':
                     line_ret = lines_ret[0]
                     print("hatch number is " + str(len(line_ret)))
@@ -800,9 +800,6 @@ class qlyrx:
                 symbol = stroke[0]
                 if len(stroke[1]):
                     symbol.appendSymbolLayer(stroke[1][0])
-                
-            
-            
             
         return symbol
 
@@ -1066,16 +1063,87 @@ class qlyrx:
                 action)
             self.iface.removeToolBarIcon(action)
 
+    def getLabelField(self, labelObj):
+        label_exp = ''
+        if 'expression' in labelObj:
+            label_exp = labelObj['expression']
+        return label_exp
+    
+    def parseLabels(self, labelSymbArr, labelExpArr, layer, layerId = 0):
+        #print(layerId)
+        #print(labelExpArr)
+        #print(labelSymbArr)
+        label = ''
+        labelExp = labelExpArr[layerId]
+        ## Parse label expression - by default - one label with brackets (VB syntax)
+        ##TODO: Generelize
+        if "[" in labelExp:
+            labelExp = labelExp[1:-1]
+            
+        labelParse = labelSymbArr[layerId][0]
+        labelSymbol = labelParse['textSymbol']
+        
+        ## Init properties
+        try:
+            fontFamily = labelSymbol['symbol']['fontFamilyName'] if labelSymbol['symbol']['fontFamilyName'] else 'David'
+            fontSize = labelSymbol['symbol']['height'] if labelSymbol['symbol']['height'] else 12
+            color = labelSymbol['symbol']['symbol']['symbolLayers'][0]['color']
+            ptColor = self.colorToRgbArray(color['values'], color['type'])
+            fontWeight = labelSymbol['symbol']['fontStyleName'] if labelSymbol['symbol']['fontStyleName'] else 'Regular'
+            minimumScale = labelParse['minimumScale'] if 'minimumScale' in labelParse else ''            
+        except Exception as e:
+            print(e)
+        
+        # Create label settings    
+        label_settings  = QgsPalLayerSettings()
+        # Create font settings    
+        text_format = QgsTextFormat()
+        text_format.setFont(QFont(fontFamily, fontSize))
+        text_format.setSize(fontSize)
+        text_format.setColor(ptColor)
+        text_format.setNamedStyle(fontWeight)
+#        buffer_settings = QgsTextBufferSettings()
+#        buffer_settings.setEnabled(True)
+#        buffer_settings.setSize(0.30)
+#        buffer_settings.setColor(QColor("black"))
+#        text_format.setBuffer(buffer_settings)
+        
+        label_settings.setFormat(text_format)
+        label_settings.fieldName = labelExp
+        
+        ## Default label placement 
+        ## TODO: create conversion object to all placement properties
+        label_settings.placement = 1
+        label_settings.centroidInside = 1
+        label_settings.centroidWhole = 1
+        ## Scale visibility
+        try:
+            label_settings.scaleVisibility = True if not minimumScale == '' else False
+            label_settings.minimumScale = minimumScale if not minimumScale == '' else 0
+        except Exception as e:
+            print(e)    
+        ## Label visibility
+        label_settings.enabled = True
+        label_settings = QgsVectorLayerSimpleLabeling(label_settings)
+        layer.setLabelsEnabled(True)        
+        ## 
+        #layer.setLabeling(label_settings)        
+        
+        return label_settings
 
     def apply_lyrx_symbols(self, layer, lyrx_data, geometry_general_type_str):
         simple_symbol = False
         raster_symbol = False
+        label_symbol = False
         layerDef = lyrx_data['layerDefinitions']
         renderer = ''
         renderers = [];
         renderers_symb_type = []
         dataset_names = []
         raster_data = ''
+        label_symb_array = []
+        label_expessions = []
+        labels = ''
 
         for p in layerDef :
             #print(p)
@@ -1087,13 +1155,27 @@ class qlyrx:
             ## Check for renderers
             temp_renderer = p['renderer'] if 'renderer' in p else ''
             renderers.append(temp_renderer)
-            ## Get lyrx shape type and original names
-            if not temp_renderer == '' and not raster_symbol:
-                rend_type = temp_renderer['symbol']['type'] if 'symbol' in temp_renderer else  temp_renderer['defaultSymbol']['symbol']['type']
-                renderers_symb_type.append(rend_type.lower())
-                dataset = p['featureTable']['dataConnection']['dataset']
-                dataset_names.append(dataset)
+            temp_label = p['labelClasses'] if 'labelClasses' in p else ''
+            label_symb_array.append(temp_label)
+            try:
+                label_expr = self.getLabelField(temp_label[0]) if len(temp_label) else ''
+                #print(label_expr)
+                if label_expr:
+                    label_symbol = True
+                    label_expessions.append(label_expr)
+                else:
+                    label_expessions.append('')
+                ## Get lyrx shape type and original names
+                if not temp_renderer == '' and not raster_symbol:
+                    rend_type = temp_renderer['symbol']['type'] if 'symbol' in temp_renderer else  temp_renderer['defaultSymbol']['symbol']['type']
+                    renderers_symb_type.append(rend_type.lower())
+                    dataset = p['featureTable']['dataConnection']['dataset']
+                    dataset_names.append(dataset)
+            except Exception as e:
+                print(e)
+        print("there are " + str(len(label_symb_array)) + " label def")
 
+                
         # Find a renderer with the active layer field attribute
         rend_to_check = []
         x = 0    
@@ -1153,7 +1235,7 @@ class qlyrx:
             ## Convert the symbolLayers definition of each CIMUniqueValueClass to qgis symbol and create a category
             idx = 0
             for sl in symbol_layers:
-                print(sl)
+                #print(sl)
                 #print ("val :" + str(symbol_values[idx][0]))
                 allSymbolLayers = {}                                    
                 ## Create definition array - add order and more    
@@ -1322,7 +1404,7 @@ class qlyrx:
             
         elif not raster_symbol and renderers[rend_idx]['type'] == 'CIMSimpleRenderer' and simple_symbol:
             single_symbology = self.parseSimpleRenderer(renderers[rend_idx], layer)
-            print(single_symbology)
+            #print(single_symbology)
             if not single_symbology == '':
                 #print('simple renderer')
                 symbol = QgsSymbol.defaultSymbol(layer.geometryType())
@@ -1343,12 +1425,24 @@ class qlyrx:
             print("No matching lyrx symbology fields found for the active layer")
             self.mb.pushCritical('',"No matching lyrx symbology fields found for the active layer")
             # add user interaction
+        
+        if label_symbol: 
+            #print(label_symbol)
+            #print(label_expessions)
+            #print(label_symb_array)
+            labels = self.parseLabels(label_symb_array, label_expessions, layer, rend_idx)
+            print("label by layer num " + str(rend_idx) + " in lyrx")
 
         # assign the created renderer to the layer
         if not renderer == '' :
             #print("re-render")
             layer.setRenderer(renderer)
             layer.triggerRepaint()
+        
+        if not labels == '':
+            layer.setLabeling(labels)
+            layer.triggerRepaint()
+            print("after labeling")
 
 
     def run(self):
