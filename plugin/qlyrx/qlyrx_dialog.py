@@ -36,7 +36,7 @@ class qlyrxDialog(QtWidgets.QDialog, FORM_CLASS):
     def __init__(self, parent=None):
         """Constructor."""
         super(qlyrxDialog, self).__init__(parent)
-        self.setMinimumSize(1000, 800)
+        #self.setMinimumSize(1000, 800)
         # Set up the user interface from Designer through FORM_CLASS.
         # After self.setupUi() you can access any designer object by doing
         # self.<objectname>, and you can use autoconnect slots - see

@@ -6,85 +6,134 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>400</width>
-    <height>301</height>
+    <width>406</width>
+    <height>335</height>
    </rect>
+  </property>
+  <property name="font">
+   <font>
+    <pointsize>10</pointsize>
+   </font>
   </property>
   <property name="windowTitle">
    <string>readLyrx</string>
   </property>
-  <widget class="QDialogButtonBox" name="button_box">
+  <property name="sizeGripEnabled">
+   <bool>true</bool>
+  </property>
+  <widget class="QWidget" name="gridLayoutWidget">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>70</y>
+     <width>361</width>
+     <height>201</height>
+    </rect>
+   </property>
+   <layout class="QVBoxLayout" name="verticalLayout_3">
+    <property name="spacing">
+     <number>23</number>
+    </property>
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout_3">
+      <item>
+       <widget class="QLabel" name="layer_label">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="text">
+         <string>Layer to apply style to:</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QgsMapLayerComboBox" name="layer_select">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="excludedProviders">
+         <stringlist>
+          <string>wms</string>
+          <string>wmts</string>
+         </stringlist>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout_4">
+      <item>
+       <widget class="QLabel" name="file_label">
+        <property name="text">
+         <string>.lyrx file: </string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <spacer name="horizontalSpacer">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeType">
+         <enum>QSizePolicy::Fixed</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>73</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item>
+       <widget class="QgsFileWidget" name="file_select">
+        <property name="dialogTitle">
+         <string>Choose a lyrx file for symbology to load</string>
+        </property>
+        <property name="filter">
+         <string>Arcgis Pro Layer (*.lyrx) ;; </string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <widget class="QCheckBox" name="parseLables">
+      <property name="text">
+       <string>Use Labels</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QDialogButtonBox" name="button_box">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+      <property name="standardButtons">
+       <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+      </property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QLabel" name="header">
    <property name="geometry">
     <rect>
      <x>30</x>
-     <y>240</y>
-     <width>341</width>
-     <height>32</height>
-    </rect>
-   </property>
-   <property name="orientation">
-    <enum>Qt::Horizontal</enum>
-   </property>
-   <property name="standardButtons">
-    <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
-   </property>
-  </widget>
-  <widget class="QgsFileWidget" name="file_select">
-   <property name="geometry">
-    <rect>
-     <x>120</x>
-     <y>120</y>
-     <width>191</width>
-     <height>20</height>
-    </rect>
-   </property>
-   <property name="dialogTitle">
-    <string>Choose a lyrx file for symbology to load</string>
-   </property>
-   <property name="filter">
-    <string>Arcgis Pro Layer (*.lyrx) ;; </string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="file_label">
-   <property name="geometry">
-    <rect>
-     <x>28</x>
-     <y>120</y>
+     <y>10</y>
      <width>81</width>
-     <height>16</height>
+     <height>31</height>
     </rect>
    </property>
    <property name="text">
-    <string>.lyrx file: </string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="layer_label">
-   <property name="geometry">
-    <rect>
-     <x>32</x>
-     <y>70</y>
-     <width>112</width>
-     <height>16</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Layer to apply style to:</string>
-   </property>
-  </widget>
-  <widget class="QgsMapLayerComboBox" name="layer_select">
-   <property name="geometry">
-    <rect>
-     <x>150</x>
-     <y>70</y>
-     <width>161</width>
-     <height>20</height>
-    </rect>
-   </property>
-   <property name="excludedProviders">
-    <stringlist>
-     <string>wms</string>
-     <string>wmts</string>
-    </stringlist>
+    <string>Qlyrx</string>
    </property>
   </widget>
  </widget>
