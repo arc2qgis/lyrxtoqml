@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>418</width>
-    <height>332</height>
+    <width>436</width>
+    <height>369</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -39,8 +39,20 @@
      <x>10</x>
      <y>10</y>
      <width>381</width>
-     <height>31</height>
+     <height>41</height>
     </rect>
+   </property>
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
+   <property name="minimumSize">
+    <size>
+     <width>381</width>
+     <height>31</height>
+    </size>
    </property>
    <property name="font">
     <font>
@@ -55,9 +67,9 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>50</y>
-     <width>391</width>
-     <height>201</height>
+     <y>60</y>
+     <width>401</width>
+     <height>221</height>
     </rect>
    </property>
    <layout class="QGridLayout" name="gridLayout">
@@ -74,10 +86,16 @@
         <item>
          <widget class="QLabel" name="layer_label">
           <property name="sizePolicy">
-           <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+           <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>121</width>
+            <height>58</height>
+           </size>
           </property>
           <property name="text">
            <string>Layer to apply style to:   </string>
@@ -87,10 +105,16 @@
         <item>
          <widget class="QgsMapLayerComboBox" name="layer_select">
           <property name="sizePolicy">
-           <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+           <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>258</width>
+            <height>20</height>
+           </size>
           </property>
           <property name="excludedProviders">
            <stringlist>
@@ -112,7 +136,7 @@
       <item>
        <widget class="QCheckBox" name="parseLables">
         <property name="sizePolicy">
-         <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+         <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
           <horstretch>0</horstretch>
           <verstretch>0</verstretch>
          </sizepolicy>
@@ -175,7 +199,7 @@
         <item>
          <widget class="QgsFileWidget" name="file_select">
           <property name="sizePolicy">
-           <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+           <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
@@ -203,8 +227,8 @@
   <widget class="QDialogButtonBox" name="button_box">
    <property name="geometry">
     <rect>
-     <x>40</x>
-     <y>280</y>
+     <x>60</x>
+     <y>320</y>
      <width>359</width>
      <height>24</height>
     </rect>
